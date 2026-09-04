@@ -1,0 +1,10 @@
+node_modules
+dist
+dist-ssr
+.DS_Store
+*.local
+.vite
+
+# Notes personnelles : le dépôt est public, elles restent en local.
+PROJET.md
+reference/
