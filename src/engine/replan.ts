@@ -9,7 +9,7 @@ import type {
   PlacedSession,
   Slot,
 } from "../data/types";
-import { allocate, consume, emptyState, orderedPlan } from "./buildWeek";
+import { allocate, consume, emptyState, intensityCaps, orderedPlan } from "./buildWeek";
 import type { Deficits } from "./deficits";
 
 /** La semaine telle qu'elle est rangée en base : générée une fois, puis amendée. */
@@ -127,7 +127,9 @@ export function resolveWeek(input: ResolveInput): ResolvedWeek {
   );
 
   const prioritized = [...freed, ...plan.filter((id) => !freed.includes(id))];
-  const fresh = allocate(free, prioritized, input.easyWeek, state);
+  // Les plafonds portent sur la semaine entière, pas sur les seuls créneaux encore libres.
+  const caps = intensityCaps(slots.length, input.easyWeek);
+  const fresh = allocate(free, prioritized, input.easyWeek, state, caps);
 
   const sessions = [...keep, ...fresh].sort(byDay);
   const orphans = freed.filter((id) => !state.used.has(id));

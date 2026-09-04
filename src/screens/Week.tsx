@@ -4,6 +4,7 @@ import type { BlockId } from "../data/blocks";
 import { BLOCKS } from "../data/blocks";
 import { PROGRESSION, STATES, placeLabel } from "../data/settings";
 import type { Discipline, Journal, PlaceId, Phase, PlacedSession } from "../data/types";
+import { intensityMix } from "../engine/buildWeek";
 import type { Deficits } from "../engine/deficits";
 import { frDate } from "../lib/date";
 import type { Slots } from "../store/db";
@@ -51,6 +52,7 @@ export function Week({
   const [showInfo, setShowInfo] = useState(false);
 
   const enough = slotCount >= phase.minSlots;
+  const mix = intensityMix(placed);
   const lagging = (Object.keys(def.byDisc) as Discipline[]).filter((d) => (def.byDisc[d] ?? 0) > 0.2);
 
   return (
@@ -167,6 +169,26 @@ export function Week({
           style={{ background: "#fff", border: `1px solid ${LINE}`, color: MUTED }}
         >
           <p className="m-0 mb-2">{PROGRESSION[weekInBlock]}</p>
+
+          {mix.total > 0 && (
+            <div className="mb-3">
+              <p className="m-0 mb-1">
+                Intensité : {mix.part.basse} % facile · {mix.part.seuil} % seuil ·{" "}
+                {mix.part.haute} % dur. La cible est autour de 80 / 5 / 15.
+              </p>
+              <div className="flex" style={{ height: 6 }}>
+                {(["basse", "seuil", "haute"] as const).map((z) => (
+                  <div
+                    key={z}
+                    style={{
+                      width: `${mix.part[z]}%`,
+                      background: z === "basse" ? "#C6D6E2" : z === "seuil" ? "#E0C99A" : "#B0451C",
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
           {def.weeks > 0 && lagging.length > 0 && (
             <p className="m-0 mb-2">
               Compensation : {lagging.map((d) => DISC[d].label.toLowerCase()).join(", ")} en retard sur{" "}

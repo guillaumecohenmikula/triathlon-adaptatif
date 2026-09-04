@@ -26,7 +26,13 @@ export const isRenfo = (blockId: string) => blockId in EXOS;
 
 /**
  * Règle 7 : remplit une séance de renfo. Budget = durée du créneau moins l'échauffement,
- * exercices par priorité tant que le budget tient, la place du gainage étant réservée d'avance.
+ * puis exercices par priorité tant que le budget tient.
+ *
+ * Le gainage n'a plus sa place réservée d'avance (révision du 2026-09-03) : les revues
+ * systématiques lui reconnaissent un effet net sur l'endurance du tronc mais faible sur la
+ * performance sportive spécifique, alors que la charge lourde et la pliométrie ont un effet
+ * démontré. Il passe donc après elles, et saute quand le créneau est trop court.
+ *
  * Retourne null si le bloc n'est pas un bloc de renfo.
  */
 export function selectExos(
@@ -52,31 +58,21 @@ export function selectExos(
   // Une zone ciblée fait remonter l'exercice de 2 crans.
   const rank = (e: Exercise) => e.prio - (hit(e) ? 2 : 0);
   const sorted = [...list].sort((a, b) => rank(a) - rank(b));
-  const core = sorted.find((e) => e.role === "gainage");
-  const rest = sorted.filter((e) => e !== core);
 
   let left = budget - warm.d;
   const out: Exercise[] = [];
-  rest.forEach((e) => {
-    // On garde de quoi caser le gainage jusqu'au bout.
-    const reserve = core && !out.includes(core) ? cost(core) : 0;
+  sorted.forEach((e) => {
     // Le premier exercice passe toujours, même si le créneau est trop court.
-    if (out.length === 0 || cost(e) <= left - reserve) {
+    if (out.length === 0 || cost(e) <= left) {
       left -= cost(e);
       out.push(e);
     }
   });
-  if (core && left >= cost(core)) {
-    left -= cost(core);
-    out.push(core);
-  }
 
   const bump = (s: string, delta: number, floor: number) =>
     s.replace(/^(\d+)/, (m) => String(Math.max(floor, Number(m) + delta)));
 
-  const items = out
-    .sort((a, b) => rank(a) - rank(b))
-    .map((e) => {
+  const items = out.map((e) => {
       const focused = hit(e) && e.role !== "gainage";
       return {
         n: e.n,
@@ -91,8 +87,8 @@ export function selectExos(
             ? bump(spec(e).s, 1, 0)
             : spec(e).s,
         load: spec(e).l,
-      };
-    });
+    };
+  });
 
   return { warm, items, left: Math.max(0, Math.round(left)) };
 }

@@ -2,6 +2,10 @@
 
 > Revue faite le 2026-09-03 pour décider quoi garder, quoi changer et quoi jeter dans
 > `src/data/`. Chaque affirmation renvoie à sa source en fin de document.
+>
+> **Statut : les points 1, 2 et 3 de la liste finale sont appliqués.** Restent ouverts le
+> point 4 (renfo avant endurance dans un créneau partagé), le point 5 (test CSS en natation)
+> et le point 6 (différencier réellement les trois modes).
 
 ## Avertissement, à lire avant le reste
 

@@ -20,6 +20,13 @@ export type AccessId =
   | "maison";
 
 export type PhaseId = "base" | "dev" | "spe" | "affutage";
+
+/**
+ * Zone d'intensité aérobie d'un bloc. Absente sur les blocs de renfo, qui ne comptent
+ * pas dans la répartition. Le modèle polarisé vise beaucoup de « basse », un peu de
+ * « haute », et surtout très peu de « seuil ».
+ */
+export type IntensityZone = "basse" | "seuil" | "haute";
 export type GoalId = "S" | "M" | "L";
 export type ModeId = "perf" | "mixte" | "physique";
 export type ZoneId = "dos" | "epaules" | "pecs" | "bras" | "jambes";
@@ -48,8 +55,10 @@ export interface Block {
   needs: AccessId[];
   min: number;
   max: number;
-  /** Séance intense : quota par semaine, et jamais deux dans le même créneau. */
+  /** Séance coûteuse en fatigue : jamais deux dans le même créneau. */
   hard: boolean;
+  /** Zone d'intensité aérobie. Absente pour le renfo, qui sort du calcul de répartition. */
+  zone?: IntensityZone;
   /** Peut être empilé dans un créneau déjà occupé. */
   stack: boolean;
   group?: GroupId;

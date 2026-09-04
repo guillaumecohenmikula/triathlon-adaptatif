@@ -3,6 +3,7 @@ import type { BlockId } from "../data/blocks";
 import type {
   Access,
   GroupId,
+  IntensityZone,
   ModeId,
   Phase,
   PlaceId,
@@ -51,11 +52,23 @@ export function orderedPlan(
 export interface AllocState {
   used: Set<BlockId>;
   groups: Set<GroupId>;
-  /** Nombre de séances dures déjà placées cette semaine. */
+  /** Nombre de séances coûteuses en fatigue déjà placées, renfo lourd compris. */
   hard: number;
+  /** Nombre de séances d'intensité aérobie élevée, seuil compris. */
+  intense: number;
+  /** Nombre de séances au seuil, la zone que le modèle polarisé raréfie le plus. */
+  threshold: number;
 }
 
-export const emptyState = (): AllocState => ({ used: new Set(), groups: new Set(), hard: 0 });
+export const emptyState = (): AllocState => ({
+  used: new Set(),
+  groups: new Set(),
+  hard: 0,
+  intense: 0,
+  threshold: 0,
+});
+
+const isIntense = (zone?: IntensityZone) => zone === "haute" || zone === "seuil";
 
 /** Enregistre un bloc comme consommé pour le reste de la semaine. */
 export function consume(state: AllocState, id: BlockId) {
@@ -63,6 +76,34 @@ export function consume(state: AllocState, id: BlockId) {
   const b = BLOCKS[id];
   if (b.group) state.groups.add(b.group);
   if (b.hard) state.hard += 1;
+  if (isIntense(b.zone)) state.intense += 1;
+  if (b.zone === "seuil") state.threshold += 1;
+}
+
+export interface Caps {
+  /** Séances dures autorisées, toutes causes confondues. */
+  hard: number;
+  /** Séances d'intensité aérobie élevée autorisées. */
+  intensity: number;
+  /** Séances au seuil autorisées. */
+  threshold: number;
+}
+
+/**
+ * Plafonds d'intensité de la semaine.
+ *
+ * Le modèle polarisé vise 75 à 80 % du volume en basse intensité, mais il est établi
+ * sur des athlètes qui s'entraînent 8 à 12 h par semaine. À trois créneaux, une seule
+ * séance de qualité pèse déjà 30 % du volume : appliquer le ratio en minutes rendrait
+ * toute séance intense impossible. On traduit donc l'intention en **nombre de séances**,
+ * proportionnel au nombre de créneaux, ce qui garde l'esprit du modèle sans prétendre
+ * à un ratio inatteignable.
+ */
+export function intensityCaps(slotCount: number, easyWeek: boolean): Caps {
+  if (easyWeek) return { hard: 1, intensity: 1, threshold: 1 };
+  const intensity = slotCount >= 6 ? 3 : slotCount >= 4 ? 2 : 1;
+  // Au plus une séance au seuil, quel que soit le volume : c'est la zone la moins rentable.
+  return { hard: 3, intensity, threshold: 1 };
 }
 
 /**
@@ -77,9 +118,9 @@ export function allocate(
   plan: BlockId[],
   easyWeek: boolean,
   state: AllocState,
+  caps: Caps,
 ): PlacedSession[] {
   const factor = easyWeek ? 0.75 : 1;
-  const hardCap = easyWeek ? 1 : 3;
   const placed: PlacedSession[] = [];
 
   const pick = (place: PlaceId, budget: number, noHard: boolean, stackOnly: boolean) =>
@@ -88,7 +129,9 @@ export function allocate(
       if (state.used.has(id) || b.place !== place || b.min > budget) return false;
       if (b.group && state.groups.has(b.group)) return false;
       if (stackOnly && !b.stack) return false;
-      if (b.hard && (noHard || state.hard >= hardCap)) return false;
+      if (b.hard && (noHard || state.hard >= caps.hard)) return false;
+      if (isIntense(b.zone) && state.intense >= caps.intensity) return false;
+      if (b.zone === "seuil" && state.threshold >= caps.threshold) return false;
       return true;
     });
 
@@ -135,11 +178,25 @@ export function buildWeek(
 ): BuiltWeek {
   const plan = orderedPlan(phase, mode, def, access);
   const state = emptyState();
-  const placed = allocate(slots, plan, easyWeek, state);
+  const placed = allocate(slots, plan, easyWeek, state, intensityCaps(slots.length, easyWeek));
 
   const dropped = plan.filter((id) => {
     const b = BLOCKS[id];
     return !state.used.has(id) && !(b.group && state.groups.has(b.group));
   });
   return { placed, dropped };
+}
+
+/** Répartition du volume aérobie de la semaine, en minutes puis en part du total. */
+export function intensityMix(sessions: PlacedSession[]) {
+  const min: Record<IntensityZone, number> = { basse: 0, seuil: 0, haute: 0 };
+  sessions.forEach((s) =>
+    s.blocks.forEach((b) => {
+      const zone = BLOCKS[b.id].zone;
+      if (zone) min[zone] += b.dur;
+    }),
+  );
+  const total = min.basse + min.seuil + min.haute;
+  const pct = (v: number) => (total === 0 ? 0 : Math.round((v / total) * 100));
+  return { minutes: min, total, part: { basse: pct(min.basse), seuil: pct(min.seuil), haute: pct(min.haute) } };
 }

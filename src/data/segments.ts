@@ -8,8 +8,8 @@ const RAW = {
     { t: "Retour au calme", d: 5, x: "5 min de marche, étirements légers ischios et mollets" },
   ],
   quality: [
-    { t: "Échauffement", d: 15, x: "12 min de trot + montées de genoux, talons-fesses, 3 lignes droites" },
-    { t: "Corps de séance", d: 30, x: "8 × 400 m à 5'30/km, récupération 1 min en trottinant" },
+    { t: "Échauffement", d: 15, x: "12 min de trot progressif, montées de genoux, talons-fesses, 3 lignes droites" },
+    { t: "Corps de séance", d: 41, x: "4 × 8 min à l'allure la plus rapide que tu peux tenir sur les quatre séries, 3 min de trot souple entre chaque. Vise une allure régulière : si la 4e série s'effondre, tu es parti trop vite." },
     { t: "Retour au calme", d: 10, x: "10 min très souple" },
   ],
   tempo: [
@@ -34,7 +34,7 @@ const RAW = {
   ],
   bikeGymInt: [
     { t: "Échauffement", d: 12, x: "Progressif, 2 accélérations de 30 s" },
-    { t: "Corps de séance", d: 35, x: "5 × 4 min résistance forte à cadence 80 / 3 min facile" },
+    { t: "Corps de séance", d: 41, x: "4 × 8 min en résistance forte à cadence 50-70, 3 min faciles entre les séries. La cadence basse est volontaire : à effort égal, elle développe davantage la capacité aérobie que le pédalage rapide." },
     { t: "Retour au calme", d: 8, x: "Résistance minimale" },
   ],
   bikeHT: [
@@ -44,7 +44,7 @@ const RAW = {
   ],
   bikeHTint: [
     { t: "Échauffement", d: 12, x: "Progressif" },
-    { t: "Corps de séance", d: 35, x: "5 × 4 min dur / 3 min facile" },
+    { t: "Corps de séance", d: 41, x: "4 × 8 min sur gros braquet à cadence 50-70, 3 min faciles entre les séries. Reste assis, buste stable." },
     { t: "Retour au calme", d: 8, x: "Braquet minimal" },
   ],
   swimTech: [
