@@ -6,7 +6,7 @@ import { PROGRESSION, STATES, placeLabel } from "../data/settings";
 import type { Discipline, Journal, PlaceId, Phase, PlacedSession } from "../data/types";
 import { intensityMix } from "../engine/buildWeek";
 import type { Deficits } from "../engine/deficits";
-import { frDate } from "../lib/date";
+import { dayLabel, frDate, isToday } from "../lib/date";
 import type { Slots } from "../store/db";
 import { DISC, LINE, MUTED, WARN_BG, WARN_TX } from "../theme";
 
@@ -74,6 +74,7 @@ export function Week({
 
       {editing && (
         <SlotEditor
+          week={week}
           slots={slots}
           openPlaces={openPlaces}
           onToggleDay={onToggleDay}
@@ -106,7 +107,13 @@ export function Week({
               }}
             >
               <div className="flex justify-between items-baseline mb-1">
-                <p className="m-0 text-sm font-medium">{s.day}</p>
+                <p className="m-0 text-sm font-medium">
+                  {s.day}{" "}
+                  <span style={{ color: MUTED, fontWeight: 400 }}>
+                    {dayLabel(week, s.day)}
+                    {isToday(week, s.day) ? " · aujourd'hui" : ""}
+                  </span>
+                </p>
                 <p className="m-0 text-xs" style={{ color: MUTED }}>
                   {st ? `${STATES.find((x) => x[0] === st)![1].toLowerCase()} · ` : ""}
                   {s.blocks.reduce((a, b) => a + b.dur, 0)} min
@@ -137,7 +144,7 @@ export function Week({
             style={{ border: `1px dashed ${LINE}` }}
           >
             <p className="m-0 text-sm" style={{ color: MUTED }}>
-              {day} · annulé
+              {day} {dayLabel(week, day)} · annulé
             </p>
             <button
               onClick={() => onRestore(day)}

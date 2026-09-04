@@ -1,9 +1,11 @@
 import { DAYS, DURATIONS } from "../data/settings";
 import type { PlaceId } from "../data/types";
+import { dayLabel } from "../lib/date";
 import type { Slots } from "../store/db";
 import { INK, LINE, MUTED } from "../theme";
 
 interface Props {
+  week: string;
   slots: Slots;
   openPlaces: { id: PlaceId; label: string }[];
   onToggleDay: (day: string) => void;
@@ -11,7 +13,7 @@ interface Props {
 }
 
 /** Le seul input hebdomadaire : quels jours, où, et combien de temps. */
-export function SlotEditor({ slots, openPlaces, onToggleDay, onChange }: Props) {
+export function SlotEditor({ week, slots, openPlaces, onToggleDay, onChange }: Props) {
   return (
     <div className="grid grid-cols-1 gap-2 mb-4">
       {DAYS.map((d) => {
@@ -28,7 +30,7 @@ export function SlotEditor({ slots, openPlaces, onToggleDay, onChange }: Props) 
               style={{ color: on ? INK : MUTED, fontWeight: on ? 500 : 400 }}
             >
               {on ? "✓ " : "+ "}
-              {d}
+              {d} <span style={{ color: MUTED, fontWeight: 400 }}>{dayLabel(week, d)}</span>
             </button>
             {on && (
               <div className="flex gap-2 mt-2">

@@ -1,7 +1,7 @@
 import { BLOCKS } from "../data/blocks";
 import { STATES, WEIGHT } from "../data/settings";
 import type { Discipline, Journal, JournalEntry } from "../data/types";
-import { frDate } from "../lib/date";
+import { dayLabel, frDate } from "../lib/date";
 import { DISC, INK, LINE, MUTED } from "../theme";
 
 interface WeekSummary {
@@ -79,7 +79,8 @@ export function History({ journal, week }: { journal: Journal; week: string }) {
               className="m-0 text-xs"
               style={{ color: e.state === "rate" ? MUTED : INK }}
             >
-              {e.day} · {e.blocks.map((b) => BLOCKS[b.id].label).join(" + ")} ·{" "}
+              {e.day} {dayLabel(w.week, e.day)} ·{" "}
+              {e.blocks.map((b) => BLOCKS[b.id].label).join(" + ")} ·{" "}
               {STATES.find((s) => s[0] === e.state)![1].toLowerCase()}
             </p>
           ))}

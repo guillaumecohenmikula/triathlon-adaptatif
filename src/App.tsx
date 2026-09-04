@@ -7,7 +7,7 @@ import type { PlaceId, Slot } from "./data/types";
 import { deficits } from "./engine/deficits";
 import { targetsFor, timing } from "./engine/phase";
 import { resolveWeek, settingsStamp } from "./engine/replan";
-import { mondayKey } from "./lib/date";
+import { mondayKey, todayIndex as dayIndexNow } from "./lib/date";
 import { History } from "./screens/History";
 import { Periods } from "./screens/Periods";
 import { Session } from "./screens/Session";
@@ -31,7 +31,7 @@ export default function App() {
   const factor = GOALS.find((g) => g.id === goal)!.factor;
 
   // Lundi = 0, pour savoir ce qui appartient déjà au passé.
-  const todayIndex = useMemo(() => (new Date().getDay() + 6) % 7, []);
+  const todayIndex = useMemo(() => dayIndexNow(), []);
 
   const { days, phase, easyWeek, weekInBlock } = useMemo(() => timing(raceDate), [raceDate]);
   const targets = useMemo(() => targetsFor(phase, factor, mode), [phase, factor, mode]);
@@ -148,6 +148,7 @@ export default function App() {
         {ready && opened && (
           <Session
             session={opened}
+            week={week}
             phase={phase}
             weekInBlock={weekInBlock}
             zones={zones}

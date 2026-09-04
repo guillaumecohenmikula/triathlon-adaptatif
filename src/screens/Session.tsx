@@ -4,6 +4,7 @@ import { BLOCKS } from "../data/blocks";
 import { PROGRESSION, STATES, placeLabel } from "../data/settings";
 import type { Phase, PlacedSession, SessionState, Zones } from "../data/types";
 import { buildSteps } from "../engine/steps";
+import { dayLabel } from "../lib/date";
 import { DISC, INK, LINE, MUTED } from "../theme";
 
 interface Props {
@@ -11,6 +12,8 @@ interface Props {
   phase: Phase;
   weekInBlock: number;
   zones: Zones;
+  /** Lundi ISO de la semaine affichée, pour dater la séance. */
+  week: string;
   state?: SessionState;
   onMark: (state: SessionState) => void;
   /** « Je ne peux pas ce jour » : annule le créneau sans compter d'échec. */
@@ -20,6 +23,7 @@ interface Props {
 
 export function Session({
   session,
+  week,
   phase,
   weekInBlock,
   zones,
@@ -67,7 +71,7 @@ export function Session({
 
       <div className="flex justify-between items-baseline mb-1">
         <p className="m-0 text-base font-medium">
-          {session.day} · {placeLabel(session.place).toLowerCase()}
+          {session.day} {dayLabel(week, session.day)} · {placeLabel(session.place).toLowerCase()}
         </p>
         <p className="m-0 text-sm" style={{ color: MUTED }}>
           {total} min
