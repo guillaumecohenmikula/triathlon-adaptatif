@@ -3,9 +3,9 @@
 > Revue faite le 2026-09-03 pour décider quoi garder, quoi changer et quoi jeter dans
 > `src/data/`. Chaque affirmation renvoie à sa source en fin de document.
 >
-> **Statut : les points 1, 2 et 3 de la liste finale sont appliqués.** Restent ouverts le
-> point 4 (renfo avant endurance dans un créneau partagé), le point 5 (test CSS en natation)
-> et le point 6 (différencier réellement les trois modes).
+> **Statut : les points 1, 2, 3 et 5 de la liste finale sont appliqués.** Restent ouverts le
+> point 4 (renfo avant endurance dans un créneau partagé) et le point 6 (différencier réellement
+> les trois modes).
 
 ## Avertissement, à lire avant le reste
 
@@ -182,7 +182,8 @@ avec trois créneaux dont deux sont pris par l'endurance. Il faudra choisir, ou 
 3. **Refondre le renfo** : charge lourde ≥ 80 % 1RM sur les exercices principaux, ajout d'un bloc
    de pliométrie, gainage rétrogradé (il ne doit plus être réservé d'avance).
 4. **Renfo avant endurance** quand les deux partagent un créneau.
-5. **Ancrer la natation sur un test CSS** et exprimer les séries en allure CSS.
+5. ~~**Ancrer la natation sur un test CSS** et exprimer les séries en allure CSS.~~ Fait le
+   2026-09-07 : test dans les réglages, séances exprimées en allure réelle.
 6. **Différencier réellement les trois modes** sur les charges et les répétitions, pas seulement
    sur le choix des blocs.
 

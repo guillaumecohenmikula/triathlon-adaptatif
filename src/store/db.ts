@@ -12,6 +12,13 @@ import type { StoredWeek } from "../engine/replan";
 
 export type { Slots };
 
+/** Résultat du test CSS : les deux temps en secondes, et quand il a été fait. */
+export interface SwimTest {
+  t400: number;
+  t200: number;
+  date: string;
+}
+
 export interface Settings {
   goal: GoalId;
   mode: ModeId;
@@ -19,6 +26,8 @@ export interface Settings {
   raceDate: string;
   access: Access;
   slots: Slots;
+  /** Absent tant que le test CSS n'a pas été fait. */
+  swimTest?: SwimTest;
 }
 
 export interface SettingsRow extends Settings {

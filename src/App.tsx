@@ -7,6 +7,7 @@ import type { PlaceId, Slot, Slots } from "./data/types";
 import { deficits } from "./engine/deficits";
 import { targetsFor, timing } from "./engine/phase";
 import { resolveWeek, settingsStamp } from "./engine/replan";
+import { cssPace, isValidTest } from "./lib/swim";
 import { dateOf, frozenUntil, mondayKey, shiftWeek, weekOf, weeksBetween } from "./lib/date";
 import { History } from "./screens/History";
 import { Periods } from "./screens/Periods";
@@ -29,7 +30,7 @@ export default function App() {
   const { settings, loaded, update } = useSettings();
   const { journal, mark } = useJournal();
   const { weights, record } = useWeights();
-  const { goal, mode, zones, raceDate, access, slots: defaultSlots } = settings;
+  const { goal, mode, zones, raceDate, access, slots: defaultSlots, swimTest } = settings;
 
   const currentWeek = useMemo(() => mondayKey(), []);
   const [week, setWeek] = useState(currentWeek);
@@ -47,6 +48,15 @@ export default function App() {
   );
 
   const openPlaces = PLACES.filter((p) => access[p.needs]);
+
+  // Allure de seuil en natation, si le test a été fait.
+  const css = useMemo(
+    () =>
+      swimTest && isValidTest(swimTest.t400, swimTest.t200)
+        ? cssPace(swimTest.t400, swimTest.t200)
+        : undefined,
+    [swimTest],
+  );
 
   // Les créneaux de la semaine priment sur le schéma habituel des réglages.
   const weekSlots: Slots = stored?.slots ?? defaultSlots;
@@ -183,6 +193,7 @@ export default function App() {
             phase={phase}
             weekInBlock={weekInBlock}
             zones={zones}
+            css={css}
             state={journal[`${week}|${opened.day}`]?.state}
             editable={DAYS.indexOf(opened.day) >= frozen}
             onMark={(st) => mark(week, opened.day, opened.place, opened.blocks, st)}
@@ -236,6 +247,7 @@ export default function App() {
         {ready && !opened && tab === "reglages" && (
           <Settings
             settings={settings}
+            today={currentWeek}
             onChange={update}
             onShowPeriods={() => setTab("periodes")}
             onShowWeek={() => setTab("semaine")}

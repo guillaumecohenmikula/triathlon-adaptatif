@@ -1,3 +1,4 @@
+import { SwimTest } from "../components/SwimTest";
 import { ACCESS, GOALS, MODES, ZONES } from "../data/settings";
 import type { AccessId, GoalId, ModeId, ZoneId } from "../data/types";
 import type { Settings as SettingsValues } from "../store/db";
@@ -5,12 +6,14 @@ import { INK, LINE, MUTED, WARN_BG, WARN_TX } from "../theme";
 
 interface Props {
   settings: SettingsValues;
+  /** Lundi ISO de la semaine en cours, pour dater le test de natation. */
+  today: string;
   onChange: (patch: Partial<SettingsValues>) => void;
   onShowPeriods: () => void;
   onShowWeek: () => void;
 }
 
-export function Settings({ settings, onChange, onShowPeriods, onShowWeek }: Props) {
+export function Settings({ settings, today, onChange, onShowPeriods, onShowWeek }: Props) {
   const { goal, mode, zones, raceDate, access } = settings;
 
   const card = (selected: boolean) => ({
@@ -80,6 +83,15 @@ export function Settings({ settings, onChange, onShowPeriods, onShowWeek }: Prop
             </button>
           );
         })}
+      </div>
+
+      <div className="mb-5">
+        <SwimTest
+          test={settings.swimTest}
+          today={today}
+          onSave={(swimTest) => onChange({ swimTest })}
+          onClear={() => onChange({ swimTest: undefined })}
+        />
       </div>
 
       <p className="m-0 mb-2 text-sm font-medium">Date de l'épreuve</p>

@@ -12,6 +12,8 @@ interface Props {
   phase: Phase;
   weekInBlock: number;
   zones: Zones;
+  /** Allure de seuil en natation, en secondes par 100 m. */
+  css?: number;
   /** Lundi ISO de la semaine affichée, pour dater la séance. */
   week: string;
   state?: SessionState;
@@ -29,6 +31,7 @@ export function Session({
   phase,
   weekInBlock,
   zones,
+  css,
   state,
   editable,
   onMark,
@@ -41,8 +44,8 @@ export function Session({
 
   const total = session.blocks.reduce((a, b) => a + b.dur, 0);
   const steps = useMemo(
-    () => buildSteps(session.blocks, phase.id, weekInBlock, zones),
-    [session.blocks, phase.id, weekInBlock, zones],
+    () => buildSteps(session.blocks, phase.id, weekInBlock, zones, css),
+    [session.blocks, phase.id, weekInBlock, zones, css],
   );
 
   if (focus) {

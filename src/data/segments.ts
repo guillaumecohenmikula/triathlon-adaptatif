@@ -60,11 +60,11 @@ const RAW = {
   swimTech: [
     { t: "Échauffement", d: 10, x: "300 m souple, alternance crawl et dos" },
     { t: "Éducatifs", d: 25, x: "6 × 50 m rattrapé, poings fermés, battements planche" },
-    { t: "Corps de séance", d: 15, x: "4 × 100 m souple, focus sur le retour de bras haut" },
+    { t: "Corps de séance", d: 15, x: "4 × 100 m à {endurance}/100m, focus sur le retour de bras haut et sur la longueur de nage. Ralentis la fréquence de bras plutôt que de forcer." },
   ],
   swimEnd: [
-    { t: "Échauffement", d: 10, x: "300 m progressif" },
-    { t: "Corps de séance", d: 40, x: "5 × 200 m allure régulière, 30 s de récup" },
+    { t: "Échauffement", d: 10, x: "300 m progressif, puis 4 × 50 m en accélérant" },
+    { t: "Corps de séance", d: 40, x: "5 × 200 m à {seuil}/100m, 20 s de récupération. C'est l'allure que tu dois pouvoir tenir sur les cinq séries au même rythme : si la dernière s'effondre, tu es parti trop vite." },
     { t: "Retour au calme", d: 10, x: "200 m souple" },
   ],
 } satisfies Record<string, Segment[]>;
