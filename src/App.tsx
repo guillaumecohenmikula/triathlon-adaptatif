@@ -46,9 +46,6 @@ export default function App() {
     [raceDate, week],
   );
 
-  const targets = useMemo(() => targetsFor(phase, factor, mode), [phase, factor, mode]);
-  const def = useMemo(() => deficits(journal, targets, week), [journal, targets, week]);
-
   const openPlaces = PLACES.filter((p) => access[p.needs]);
 
   // Les créneaux de la semaine priment sur le schéma habituel des réglages.
@@ -63,6 +60,15 @@ export default function App() {
       ).map((d) => ({ day: d, place: weekSlots[d].place, duration: weekSlots[d].duration })),
     [weekSlots, access],
   );
+
+  // Les cibles se calent sur le temps réellement déclaré, sinon le retard est maximal
+  // partout en permanence et la compensation ne priorise plus rien.
+  const declared = useMemo(() => orderedSlots.reduce((a, s) => a + s.duration, 0), [orderedSlots]);
+  const targets = useMemo(
+    () => targetsFor(phase, factor, mode, declared),
+    [phase, factor, mode, declared],
+  );
+  const def = useMemo(() => deficits(journal, targets, week), [journal, targets, week]);
 
   const stamp = useMemo(
     () => settingsStamp({ goal, mode, raceDate, access }),

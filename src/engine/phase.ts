@@ -29,13 +29,35 @@ export function timing(raceDate: string, now: number = Date.now()): Timing {
 /**
  * Cibles hebdomadaires en minutes, une fois appliqués le format visé (`factor`)
  * et le mode. Règle 4 : en mode physique la cible renfo est multipliée par 1,8.
+ *
+ * `weeklyMinutes` est le temps réellement déclaré en créneaux. Quand il est inférieur
+ * aux cibles théoriques, celles-ci sont ramenées à ce volume en gardant les proportions
+ * de la phase. Sans cet ajustement, une cible hors de portée met toutes les disciplines
+ * en retard maximal en permanence : la compensation de la règle 5 s'applique alors partout,
+ * donc elle ne priorise plus rien.
  */
-export function targetsFor(phase: Phase, factor: number, mode: ModeId): Targets {
+export function targetsFor(
+  phase: Phase,
+  factor: number,
+  mode: ModeId,
+  weeklyMinutes?: number,
+): Targets {
   const renfoBoost = mode === "physique" ? 1.8 : mode === "mixte" ? 1.2 : 1;
-  const out = {} as Targets;
+  const raw = {} as Targets;
   (Object.keys(phase.targets) as (keyof Targets)[]).forEach((d) => {
     const m = d === "renfo" ? factor * renfoBoost : factor;
-    out[d] = Math.round((phase.targets[d] * m) / 5) * 5;
+    raw[d] = phase.targets[d] * m;
+  });
+
+  const total = Object.values(raw).reduce((a, v) => a + v, 0);
+  const scale =
+    weeklyMinutes !== undefined && weeklyMinutes > 0 && weeklyMinutes < total
+      ? weeklyMinutes / total
+      : 1;
+
+  const out = {} as Targets;
+  (Object.keys(raw) as (keyof Targets)[]).forEach((d) => {
+    out[d] = Math.round((raw[d] * scale) / 5) * 5;
   });
   return out;
 }

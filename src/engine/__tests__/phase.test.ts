@@ -59,3 +59,40 @@ describe("cibles hebdomadaires", () => {
     expect(targetsFor(base, 1, "physique").course).toBe(targetsFor(base, 1, "perf").course);
   });
 });
+
+describe("cibles calées sur le temps déclaré", () => {
+  const base = phase("base");
+
+  it("ne touche à rien quand le temps déclaré couvre les cibles", () => {
+    const libre = targetsFor(base, 1, "perf");
+    const large = targetsFor(base, 1, "perf", 1000);
+    expect(large).toEqual(libre);
+  });
+
+  it("ramène les cibles au volume réellement disponible", () => {
+    const t = targetsFor(base, 1, "perf", 200);
+    const total = Object.values(t).reduce((a, v) => a + v, 0);
+    // Arrondi au pas de 5 sur quatre disciplines : une marge de 10 min suffit.
+    expect(Math.abs(total - 200)).toBeLessThanOrEqual(10);
+  });
+
+  it("garde les proportions de la phase en réduisant", () => {
+    const plein = targetsFor(base, 1, "perf");
+    const reduit = targetsFor(base, 1, "perf", 160);
+    const ratio = (x: typeof plein) => x.course / x.velo;
+    expect(ratio(reduit)).toBeCloseTo(ratio(plein), 1);
+  });
+
+  it("laisse un déficit mesurable au lieu d'un retard maximal permanent", () => {
+    // Le cas de Guil : 102 min réelles pour des cibles théoriques à plus de 300.
+    const theorique = targetsFor(base, 1, "mixte");
+    const cale = targetsFor(base, 1, "mixte", 240);
+    expect(cale.course).toBeLessThan(theorique.course);
+    expect(cale.course).toBeGreaterThan(0);
+  });
+
+  it("ignore un temps déclaré nul ou absurde", () => {
+    expect(targetsFor(base, 1, "perf", 0)).toEqual(targetsFor(base, 1, "perf"));
+    expect(targetsFor(base, 1, "perf", -50)).toEqual(targetsFor(base, 1, "perf"));
+  });
+});
