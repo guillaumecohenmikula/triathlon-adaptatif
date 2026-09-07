@@ -194,6 +194,7 @@ export default function App() {
             weekInBlock={weekInBlock}
             zones={zones}
             css={css}
+            mode={mode}
             state={journal[`${week}|${opened.day}`]?.state}
             editable={DAYS.indexOf(opened.day) >= frozen}
             onMark={(st) => mark(week, opened.day, opened.place, opened.blocks, st)}

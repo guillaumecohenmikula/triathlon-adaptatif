@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { SessionStep } from "../components/SessionStep";
 import { BLOCKS } from "../data/blocks";
-import { PROGRESSION, STATES, placeLabel } from "../data/settings";
-import type { Phase, PlacedSession, SessionState, Zones } from "../data/types";
+import { MODE_GUIDANCE, PROGRESSION, STATES, placeLabel } from "../data/settings";
+import type { ModeId, Phase, PlacedSession, SessionState, Zones } from "../data/types";
 import { buildSteps } from "../engine/steps";
 import { dayLabel } from "../lib/date";
 import { DISC, INK, LINE, MUTED } from "../theme";
@@ -14,6 +14,7 @@ interface Props {
   zones: Zones;
   /** Allure de seuil en natation, en secondes par 100 m. */
   css?: number;
+  mode: ModeId;
   /** Lundi ISO de la semaine affichée, pour dater la séance. */
   week: string;
   state?: SessionState;
@@ -32,6 +33,7 @@ export function Session({
   weekInBlock,
   zones,
   css,
+  mode,
   state,
   editable,
   onMark,
@@ -43,9 +45,10 @@ export function Session({
   const [checks, setChecks] = useState<Record<number, number>>({});
 
   const total = session.blocks.reduce((a, b) => a + b.dur, 0);
+  const hasRenfo = session.blocks.some((b) => BLOCKS[b.id].disc === "renfo");
   const steps = useMemo(
-    () => buildSteps(session.blocks, phase.id, weekInBlock, zones, css),
-    [session.blocks, phase.id, weekInBlock, zones, css],
+    () => buildSteps(session.blocks, phase.id, weekInBlock, zones, css, mode),
+    [session.blocks, phase.id, weekInBlock, zones, css, mode],
   );
 
   if (focus) {
@@ -83,9 +86,14 @@ export function Session({
           {total} min
         </p>
       </div>
-      <p className="m-0 mb-4 text-xs" style={{ color: MUTED }}>
+      <p className="m-0 mb-2 text-xs" style={{ color: MUTED }}>
         {PROGRESSION[weekInBlock]}
       </p>
+      {hasRenfo && (
+        <p className="m-0 mb-4 text-xs" style={{ color: MUTED }}>
+          {MODE_GUIDANCE[mode]}
+        </p>
+      )}
 
       <button
         onClick={() => {

@@ -126,3 +126,57 @@ describe("pliométrie", () => {
     expect(jump!.load.toLowerCase()).toContain("sans fatigue");
   });
 });
+
+describe("différence réelle entre les trois modes", () => {
+  const seance = (mode: "perf" | "mixte" | "physique") =>
+    selectExos("strFull", "base", 110, 1, {}, mode)!;
+
+  const repsOf = (s: string) => Number(/^\d+ × (\d+)/.exec(s)?.[1] ?? 0);
+
+  it("raccourcit les séries en performance et les allonge en physique", () => {
+    const squat = (m: "perf" | "mixte" | "physique") =>
+      repsOf(seance(m).items.find((e) => e.n === "Squat")!.sets);
+
+    expect(squat("perf")).toBeLessThan(squat("mixte"));
+    expect(squat("physique")).toBeGreaterThan(squat("mixte"));
+  });
+
+  it("ne descend pas sous 4 répétitions ni au-dessus de 12", () => {
+    ["perf", "physique"].forEach((m) => {
+      seance(m as "perf").items
+        .filter((e) => e.role === "principal" || e.role === "secondaire")
+        .forEach((e) => {
+          const r = repsOf(e.sets);
+          if (r > 0) {
+            expect(r).toBeGreaterThanOrEqual(4);
+            expect(r).toBeLessThanOrEqual(12);
+          }
+        });
+    });
+  });
+
+  it("laisse les accessoires et le gainage identiques dans les trois modes", () => {
+    const autres = (m: "perf" | "mixte" | "physique") =>
+      seance(m).items
+        .filter((e) => e.role === "accessoire" || e.role === "gainage")
+        .map((e) => e.sets)
+        .join("|");
+    expect(autres("perf")).toBe(autres("mixte"));
+    expect(autres("physique")).toBe(autres("mixte"));
+  });
+
+  it("ne touche pas aux prescriptions qui ne sont pas de simples séries", () => {
+    // Le gainage est en secondes, la pliométrie porte un libellé : rien ne doit bouger.
+    const plyo = (m: "perf" | "mixte" | "physique") =>
+      seance(m).items.find((e) => /saut/i.test(e.n))!.sets;
+    expect(plyo("perf")).toBe(plyo("mixte"));
+    expect(plyo("physique")).toBe(plyo("mixte"));
+  });
+
+  it("se combine avec la semaine allégée sans se contredire", () => {
+    const normale = selectExos("strFull", "base", 110, 1, {}, "physique")!;
+    const allegee = selectExos("strFull", "base", 110, 4, {}, "physique")!;
+    const series = (r: typeof normale) => Number(/^(\d+)/.exec(r.items[0].sets)?.[1] ?? 0);
+    expect(series(allegee)).toBe(series(normale) - 1);
+  });
+});

@@ -1,6 +1,6 @@
 import { EXOS } from "../data/exercises";
 import { WARMUPS } from "../data/warmups";
-import type { Exercise, ExoRole, PhaseId, Warmup, Zones } from "../data/types";
+import type { Exercise, ExoRole, ModeId, PhaseId, Warmup, Zones } from "../data/types";
 
 export interface ExoStep {
   n: string;
@@ -35,12 +35,37 @@ export const isRenfo = (blockId: string) => blockId in EXOS;
  *
  * Retourne null si le bloc n'est pas un bloc de renfo.
  */
+/**
+ * Prescriptions transformables : « 4 × 8 », éventuellement suivi de « par bras ».
+ * Tout le reste (durées en secondes, séries composées, « maximum moins 2 ») est laissé
+ * intact : y appliquer un décalage mécanique produirait des consignes absurdes.
+ */
+const SIMPLE_REPS = /^(\d+) × (\d+)( par (?:bras|jambe|côté))?$/;
+
+/**
+ * Règle 4, appliquée à la séance elle-même : le mode change les répétitions des exercices
+ * qui portent la charge. La performance en endurance vient de la force, donc de séries
+ * courtes et lourdes ; l'hypertrophie vient du volume, donc de séries plus longues.
+ * Les accessoires et le gainage ne bougent pas, leur rôle est le même dans les trois modes.
+ */
+function forMode(sets: string, role: ExoRole, mode: ModeId): string {
+  if (mode === "mixte") return sets;
+  if (role !== "principal" && role !== "secondaire") return sets;
+  const m = SIMPLE_REPS.exec(sets);
+  if (!m) return sets;
+  const [, s, r, suffix = ""] = m;
+  const reps = Number(r);
+  const next = mode === "perf" ? Math.max(4, reps - 2) : Math.min(12, reps + 3);
+  return `${s} × ${next}${suffix}`;
+}
+
 export function selectExos(
   blockId: string,
   phaseId: PhaseId,
   budget: number,
   weekInBlock: number,
   zones: Zones,
+  mode: ModeId = "mixte",
 ): RenfoPlan | null {
   const list = EXOS[blockId];
   const warm = WARMUPS[blockId];
@@ -80,12 +105,13 @@ export function selectExos(
         cue: e.cue,
         dur: cost(e),
         zoneFocus: focused,
-        // Semaine allégée : une série de moins. Zone ciblée : une série de plus.
-        sets: easy
-          ? bump(spec(e).s, -1, 2)
-          : focused
-            ? bump(spec(e).s, 1, 0)
-            : spec(e).s,
+        // Le mode fixe la plage de répétitions, puis la semaine allégée retire une série
+        // et une zone ciblée en ajoute une.
+        sets: (() => {
+          const base = forMode(spec(e).s, e.role, mode);
+          if (easy) return bump(base, -1, 2);
+          return focused ? bump(base, 1, 0) : base;
+        })(),
         load: spec(e).l,
     };
   });

@@ -193,3 +193,24 @@ describe("règle 4, effet du mode", () => {
     expect(ids(phys)).not.toContain("strUp");
   });
 });
+
+describe("ordre dans un créneau partagé", () => {
+  const gymDay = (duration: number) => [{ day: "Lundi", place: "salle" as const, duration }];
+
+  it("met le renfo avant l'endurance", () => {
+    const r = buildWeek(gymDay(120), phase("base"), false, noDeficit, fullAccess({ tapis: false }), "perf");
+    const blocks = r.placed[0].blocks.map((b) => b.id);
+    expect(blocks.length).toBeGreaterThan(1);
+    const discs = blocks.map((id) => BLOCKS[id].disc);
+    const lastRenfo = discs.lastIndexOf("renfo");
+    const firstAero = discs.findIndex((d) => d !== "renfo");
+    if (firstAero !== -1 && lastRenfo !== -1) expect(lastRenfo).toBeLessThan(firstAero);
+  });
+
+  it("ne change pas les durées en réordonnant", () => {
+    const r = buildWeek(gymDay(120), phase("base"), false, noDeficit, fullAccess({ tapis: false }), "perf");
+    const total = r.placed[0].blocks.reduce((a, b) => a + b.dur, 0);
+    expect(total).toBeLessThanOrEqual(120);
+    r.placed[0].blocks.forEach((b) => expect(b.dur).toBeGreaterThanOrEqual(BLOCKS[b.id].min));
+  });
+});

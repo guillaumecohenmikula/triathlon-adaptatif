@@ -1,6 +1,6 @@
 import type { BlockId } from "../data/blocks";
 import { SEGMENTS } from "../data/segments";
-import type { ExoRole, PhaseId, PlacedBlock, Zones } from "../data/types";
+import type { ExoRole, ModeId, PhaseId, PlacedBlock, Zones } from "../data/types";
 import { formatPace, swimPaces } from "../lib/swim";
 import { selectExos } from "./selectExos";
 
@@ -47,11 +47,12 @@ export function buildSteps(
   zones: Zones,
   /** Allure de seuil en natation, en secondes par 100 m. */
   css?: number,
+  mode: ModeId = "mixte",
 ): Step[] {
   const out: Step[] = [];
 
   blocks.forEach((b) => {
-    const exos = selectExos(b.id, phaseId, b.dur, weekInBlock, zones);
+    const exos = selectExos(b.id, phaseId, b.dur, weekInBlock, zones, mode);
     if (exos) {
       out.push({
         kind: "warm",

@@ -176,6 +176,13 @@ export function allocate(
         });
       }
     }
+    // La force passe avant l'endurance quand les deux partagent un créneau : c'est l'ordre
+    // qui favorise les gains de force du bas du corps, et l'interférence est plus marquée
+    // en séance commune qu'avec plusieurs heures d'écart.
+    blocks.sort(
+      (a, b) => Number(BLOCKS[b.id].disc === "renfo") - Number(BLOCKS[a.id].disc === "renfo"),
+    );
+
     placed.push({ ...slot, blocks });
   });
 

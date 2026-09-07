@@ -60,6 +60,13 @@ export const STATES: [SessionState, string][] = [
 /** Pondération d'une séance dans le calcul du volume réellement fait. */
 export const WEIGHT: Record<SessionState, number> = { fait: 1, partiel: 0.5, rate: 0 };
 
+/** Ce que le mode change concrètement dans une séance de renfo. */
+export const MODE_GUIDANCE: Record<ModeId, string> = {
+  perf: "Mode performance : séries courtes et lourdes sur les exercices principaux. Monte la charge dès que la dernière répétition passe facilement, et garde toujours une répétition en réserve.",
+  mixte: "Mode équilibré : les charges et les séries de référence, sans ajustement.",
+  physique: "Mode chrono et physique : séries plus longues, charge modérée. C'est le volume qui construit le muscle, arrête chaque série à une ou deux répétitions de l'échec.",
+};
+
 /** Consigne de charge affichée selon la position dans le cycle de 4 semaines. */
 export const PROGRESSION: Record<number, string> = {
   1: "Semaine 1 du bloc — charge de référence. Note ce que tu mets, tout part de là.",
