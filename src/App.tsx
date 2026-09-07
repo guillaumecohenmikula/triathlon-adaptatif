@@ -3,11 +3,11 @@ import { BottomNav } from "./components/BottomNav";
 import type { Tab } from "./components/BottomNav";
 import { PHASES } from "./data/phases";
 import { DAYS, GOALS, PLACES } from "./data/settings";
-import type { PlaceId, Slot } from "./data/types";
+import type { PlaceId, Slot, Slots } from "./data/types";
 import { deficits } from "./engine/deficits";
 import { targetsFor, timing } from "./engine/phase";
 import { resolveWeek, settingsStamp } from "./engine/replan";
-import { mondayKey, todayIndex as dayIndexNow } from "./lib/date";
+import { dateOf, frozenUntil, mondayKey, shiftWeek, weekOf, weeksBetween } from "./lib/date";
 import { History } from "./screens/History";
 import { Periods } from "./screens/Periods";
 import { Session } from "./screens/Session";
@@ -18,42 +18,56 @@ import { useSettings } from "./store/useSettings";
 import { useWeek } from "./store/useWeek";
 import { INK, LINE, MUTED, PAPER } from "./theme";
 
+/** Jusqu'où on peut remonter dans le passé. Au-delà, l'historique fait le travail. */
+const PAST_WEEKS = 8;
+
 export default function App() {
   const [tab, setTab] = useState<Tab>("semaine");
   const [openDay, setOpenDay] = useState<string | null>(null);
 
   const { settings, loaded, update } = useSettings();
   const { journal, mark } = useJournal();
-  const { goal, mode, zones, raceDate, access, slots } = settings;
+  const { goal, mode, zones, raceDate, access, slots: defaultSlots } = settings;
 
-  const week = mondayKey();
+  const currentWeek = useMemo(() => mondayKey(), []);
+  const [week, setWeek] = useState(currentWeek);
   const weekStore = useWeek(week);
+  const stored = weekStore.stored;
+
   const factor = GOALS.find((g) => g.id === goal)!.factor;
 
-  // Lundi = 0, pour savoir ce qui appartient déjà au passé.
-  const todayIndex = useMemo(() => dayIndexNow(), []);
+  // Le compte à rebours reste relatif à aujourd'hui, la phase à la semaine consultée :
+  // planifier la semaine prochaine avec la phase d'aujourd'hui donnerait un plan faux.
+  const daysToRace = useMemo(() => timing(raceDate).days, [raceDate]);
+  const { phase, easyWeek, weekInBlock } = useMemo(
+    () => timing(raceDate, dateOf(week, "Lundi").getTime()),
+    [raceDate, week],
+  );
 
-  const { days, phase, easyWeek, weekInBlock } = useMemo(() => timing(raceDate), [raceDate]);
   const targets = useMemo(() => targetsFor(phase, factor, mode), [phase, factor, mode]);
   const def = useMemo(() => deficits(journal, targets, week), [journal, targets, week]);
 
   const openPlaces = PLACES.filter((p) => access[p.needs]);
 
+  // Les créneaux de la semaine priment sur le schéma habituel des réglages.
+  const weekSlots: Slots = stored?.slots ?? defaultSlots;
+  const ownSlots = Boolean(stored?.slots);
+
   // Un créneau dont le lieu n'est plus accessible disparaît du plan sans être supprimé.
   const orderedSlots: Slot[] = useMemo(
     () =>
-      DAYS.filter((d) => slots[d] && access[PLACES.find((p) => p.id === slots[d].place)!.needs]).map(
-        (d) => ({ day: d, place: slots[d].place, duration: slots[d].duration }),
-      ),
-    [slots, access],
+      DAYS.filter(
+        (d) => weekSlots[d] && access[PLACES.find((p) => p.id === weekSlots[d].place)!.needs],
+      ).map((d) => ({ day: d, place: weekSlots[d].place, duration: weekSlots[d].duration })),
+    [weekSlots, access],
   );
 
   const stamp = useMemo(
     () => settingsStamp({ goal, mode, raceDate, access }),
     [goal, mode, raceDate, access],
   );
-  const stored = weekStore.stored;
   const cancelled = useMemo(() => stored?.cancelled ?? [], [stored]);
+  const frozen = useMemo(() => frozenUntil(week), [week]);
 
   const resolved = useMemo(
     () =>
@@ -63,7 +77,7 @@ export default function App() {
         cancelled,
         journal,
         week,
-        todayIndex,
+        todayIndex: frozen,
         stamp,
         phase,
         easyWeek,
@@ -71,7 +85,7 @@ export default function App() {
         access,
         mode,
       }),
-    [stored, orderedSlots, cancelled, journal, week, todayIndex, stamp, phase, easyWeek, def, access, mode],
+    [stored, orderedSlots, cancelled, journal, week, frozen, stamp, phase, easyWeek, def, access, mode],
   );
 
   const ready = loaded && weekStore.loaded;
@@ -84,14 +98,23 @@ export default function App() {
   }, [ready, resolved, cancelled, stamp]);
 
   const toggleDay = (d: string) => {
-    const next = { ...slots };
+    const next = { ...weekSlots };
     if (next[d]) delete next[d];
     else next[d] = { place: openPlaces[0]?.id ?? "maison", duration: 60 };
-    update({ slots: next });
+    weekStore.setSlots(next);
   };
 
   const setSlot = (d: string, patch: Partial<{ place: PlaceId; duration: number }>) =>
-    update({ slots: { ...slots, [d]: { ...slots[d], ...patch } } });
+    weekStore.setSlots({ ...weekSlots, [d]: { ...weekSlots[d], ...patch } });
+
+  const lastWeek = useMemo(() => weekOf(raceDate), [raceDate]);
+  const firstWeek = useMemo(() => shiftWeek(currentWeek, -PAST_WEEKS), [currentWeek]);
+  const goWeek = (delta: number) => {
+    const next = shiftWeek(week, delta);
+    if (next < firstWeek || next > lastWeek) return;
+    setOpenDay(null);
+    setWeek(next);
+  };
 
   const opened = resolved.sessions.find((s) => s.day === openDay);
   const goalLabel = GOALS.find((g) => g.id === goal)!.label;
@@ -127,7 +150,7 @@ export default function App() {
                   className="m-0 leading-none"
                   style={{ fontSize: 34, fontWeight: 500, letterSpacing: "-0.02em" }}
                 >
-                  {days}
+                  {daysToRace}
                 </p>
                 <p className="m-0 text-xs" style={{ color: MUTED }}>
                   jours
@@ -153,6 +176,7 @@ export default function App() {
             weekInBlock={weekInBlock}
             zones={zones}
             state={journal[`${week}|${opened.day}`]?.state}
+            editable={DAYS.indexOf(opened.day) >= frozen}
             onMark={(st) => mark(week, opened.day, opened.place, opened.blocks, st)}
             onCancel={() => {
               weekStore.cancelDay(opened.day);
@@ -165,11 +189,16 @@ export default function App() {
         {ready && !opened && tab === "semaine" && (
           <Week
             week={week}
+            offset={weeksBetween(currentWeek, week)}
+            canGoBack={shiftWeek(week, -1) >= firstWeek}
+            canGoForward={shiftWeek(week, 1) <= lastWeek}
+            frozen={frozen}
+            ownSlots={ownSlots}
             placed={resolved.sessions}
             dropped={resolved.dropped}
             orphans={resolved.orphans}
             cancelled={cancelled}
-            slots={slots}
+            slots={weekSlots}
             openPlaces={openPlaces}
             journal={journal}
             phase={phase}
@@ -180,10 +209,14 @@ export default function App() {
             onRestore={weekStore.restoreDay}
             onToggleDay={toggleDay}
             onSlotChange={setSlot}
+            onGoWeek={goWeek}
+            onBackToCurrent={() => setWeek(currentWeek)}
+            onSaveAsDefault={() => update({ slots: weekSlots })}
+            onResetSlots={weekStore.clearSlots}
           />
         )}
 
-        {ready && !opened && tab === "historique" && <History journal={journal} week={week} />}
+        {ready && !opened && tab === "historique" && <History journal={journal} week={currentWeek} />}
 
         {ready && !opened && tab === "reglages" && (
           <Settings

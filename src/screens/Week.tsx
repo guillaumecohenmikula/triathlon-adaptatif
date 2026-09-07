@@ -1,17 +1,31 @@
 import { useState } from "react";
 import { SlotEditor } from "../components/SlotEditor";
+import { WeekPicker } from "../components/WeekPicker";
 import type { BlockId } from "../data/blocks";
 import { BLOCKS } from "../data/blocks";
 import { PROGRESSION, STATES, placeLabel } from "../data/settings";
-import type { Discipline, Journal, PlaceId, Phase, PlacedSession } from "../data/types";
+import type {
+  Discipline,
+  Journal,
+  Phase,
+  PlaceId,
+  PlacedSession,
+  Slots,
+} from "../data/types";
 import { intensityMix } from "../engine/buildWeek";
 import type { Deficits } from "../engine/deficits";
-import { dayLabel, frDate, isToday } from "../lib/date";
-import type { Slots } from "../store/db";
-import { DISC, LINE, MUTED, WARN_BG, WARN_TX } from "../theme";
+import { dayLabel, isToday } from "../lib/date";
+import { DISC, INK, LINE, MUTED, WARN_BG, WARN_TX } from "../theme";
 
 interface Props {
   week: string;
+  offset: number;
+  canGoBack: boolean;
+  canGoForward: boolean;
+  /** Index du premier jour encore modifiable. 7 = semaine entièrement passée. */
+  frozen: number;
+  /** La semaine porte des créneaux qui lui sont propres. */
+  ownSlots: boolean;
   placed: PlacedSession[];
   dropped: BlockId[];
   /** Blocs libérés par une annulation qu'aucun créneau restant n'a pu absorber. */
@@ -28,10 +42,19 @@ interface Props {
   onRestore: (day: string) => void;
   onToggleDay: (day: string) => void;
   onSlotChange: (day: string, patch: Partial<{ place: PlaceId; duration: number }>) => void;
+  onGoWeek: (delta: number) => void;
+  onBackToCurrent: () => void;
+  onSaveAsDefault: () => void;
+  onResetSlots: () => void;
 }
 
 export function Week({
   week,
+  offset,
+  canGoBack,
+  canGoForward,
+  frozen,
+  ownSlots,
   placed,
   dropped,
   orphans,
@@ -47,46 +70,90 @@ export function Week({
   onRestore,
   onToggleDay,
   onSlotChange,
+  onGoWeek,
+  onBackToCurrent,
+  onSaveAsDefault,
+  onResetSlots,
 }: Props) {
   const [editing, setEditing] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
 
+  const past = frozen >= 7;
   const enough = slotCount >= phase.minSlots;
   const mix = intensityMix(placed);
   const lagging = (Object.keys(def.byDisc) as Discipline[]).filter((d) => (def.byDisc[d] ?? 0) > 0.2);
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-3">
-        <p className="m-0 text-sm font-medium">Semaine du {frDate(week)}</p>
-        <button
-          onClick={() => setEditing((e) => !e)}
-          className="text-xs px-3 py-2 cursor-pointer"
-          style={{
-            border: `1px solid ${editing ? "#12202B" : LINE}`,
-            background: editing ? "#12202B" : "#fff",
-            color: editing ? "#fff" : "#12202B",
-          }}
-        >
-          {editing ? "Terminé" : "Modifier mes créneaux"}
-        </button>
-      </div>
+      <WeekPicker
+        week={week}
+        offset={offset}
+        canGoBack={canGoBack}
+        canGoForward={canGoForward}
+        onGo={onGoWeek}
+        onBackToCurrent={onBackToCurrent}
+      />
+
+      {!past && (
+        <div className="flex justify-end mb-3">
+          <button
+            onClick={() => setEditing((e) => !e)}
+            className="text-xs px-3 py-2 cursor-pointer"
+            style={{
+              border: `1px solid ${editing ? INK : LINE}`,
+              background: editing ? INK : "#fff",
+              color: editing ? "#fff" : INK,
+            }}
+          >
+            {editing ? "Terminé" : "Modifier mes créneaux"}
+          </button>
+        </div>
+      )}
 
       {editing && (
-        <SlotEditor
-          week={week}
-          slots={slots}
-          openPlaces={openPlaces}
-          onToggleDay={onToggleDay}
-          onChange={onSlotChange}
-        />
+        <>
+          <SlotEditor
+            week={week}
+            slots={slots}
+            openPlaces={openPlaces}
+            onToggleDay={onToggleDay}
+            onChange={onSlotChange}
+          />
+          <div className="mb-4">
+            <p className="m-0 mb-2 text-xs" style={{ color: MUTED }}>
+              {ownSlots
+                ? "Ces créneaux ne valent que pour cette semaine."
+                : "Ces créneaux viennent de ton schéma habituel."}
+            </p>
+            {ownSlots && (
+              <div className="flex gap-2">
+                <button
+                  onClick={onSaveAsDefault}
+                  className="flex-1 text-xs p-2 cursor-pointer"
+                  style={{ border: `1px solid ${LINE}`, background: "#fff", color: INK }}
+                >
+                  En faire mon schéma habituel
+                </button>
+                <button
+                  onClick={onResetSlots}
+                  className="flex-1 text-xs p-2 cursor-pointer"
+                  style={{ border: `1px solid ${LINE}`, background: "#fff", color: MUTED }}
+                >
+                  Revenir au schéma habituel
+                </button>
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {!editing && placed.length === 0 && (
         <p className="text-sm mb-4" style={{ color: MUTED }}>
-          {slotCount === 0
-            ? "Aucun créneau cette semaine. Touche « Modifier mes créneaux » pour en ajouter."
-            : "Plus rien de prévu sur les jours qui restent."}
+          {past
+            ? "Aucune séance n'a été planifiée sur cette semaine."
+            : slotCount === 0
+              ? "Aucun créneau cette semaine. Touche « Modifier mes créneaux » pour en ajouter."
+              : "Plus rien de prévu sur les jours qui restent."}
         </p>
       )}
 
@@ -131,8 +198,9 @@ export function Week({
 
       {!editing && orphans.length > 0 && (
         <div className="p-3 mb-2 text-sm" style={{ background: WARN_BG, color: WARN_TX }}>
-          Pas de place cette semaine pour {orphans.map((id) => BLOCKS[id].label.toLowerCase()).join(", ")}.
-          Le volume manquant sera rattrapé la semaine prochaine.
+          Pas de place cette semaine pour{" "}
+          {orphans.map((id) => BLOCKS[id].label.toLowerCase()).join(", ")}. Le volume manquant sera
+          rattrapé la semaine prochaine.
         </div>
       )}
 
@@ -146,13 +214,15 @@ export function Week({
             <p className="m-0 text-sm" style={{ color: MUTED }}>
               {day} {dayLabel(week, day)} · annulé
             </p>
-            <button
-              onClick={() => onRestore(day)}
-              className="text-xs px-3 py-2 cursor-pointer"
-              style={{ border: `1px solid ${LINE}`, background: "#fff", color: "#12202B" }}
-            >
-              Rétablir
-            </button>
+            {!past && (
+              <button
+                onClick={() => onRestore(day)}
+                className="text-xs px-3 py-2 cursor-pointer"
+                style={{ border: `1px solid ${LINE}`, background: "#fff", color: INK }}
+              >
+                Rétablir
+              </button>
+            )}
           </div>
         ))}
 
@@ -196,10 +266,11 @@ export function Week({
               </div>
             </div>
           )}
+
           {def.weeks > 0 && lagging.length > 0 && (
             <p className="m-0 mb-2">
-              Compensation : {lagging.map((d) => DISC[d].label.toLowerCase()).join(", ")} en retard sur{" "}
-              {def.weeks} semaine{def.weeks > 1 ? "s" : ""}, donc priorisé cette semaine.
+              Compensation : {lagging.map((d) => DISC[d].label.toLowerCase()).join(", ")} en retard
+              sur {def.weeks} semaine{def.weeks > 1 ? "s" : ""}, donc priorisé cette semaine.
             </p>
           )}
           {dropped.length > 0 && (

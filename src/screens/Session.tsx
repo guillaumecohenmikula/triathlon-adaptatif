@@ -15,6 +15,8 @@ interface Props {
   /** Lundi ISO de la semaine affichée, pour dater la séance. */
   week: string;
   state?: SessionState;
+  /** Faux sur un jour passé : on peut encore noter la séance, plus l'annuler. */
+  editable: boolean;
   onMark: (state: SessionState) => void;
   /** « Je ne peux pas ce jour » : annule le créneau sans compter d'échec. */
   onCancel: () => void;
@@ -28,6 +30,7 @@ export function Session({
   weekInBlock,
   zones,
   state,
+  editable,
   onMark,
   onCancel,
   onBack,
@@ -140,6 +143,7 @@ export function Session({
       </div>
 
       {/* Volontairement séparé du bilan : un empêchement n'est pas un échec. */}
+      {editable && (
       <div className="mt-6 pt-4" style={{ borderTop: `1px solid ${LINE}` }}>
         <button
           onClick={onCancel}
@@ -153,6 +157,7 @@ export function Session({
           Ça ne compte pas comme une séance ratée.
         </p>
       </div>
+      )}
     </div>
   );
 }

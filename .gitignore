@@ -8,3 +8,6 @@ dist-ssr
 # Notes personnelles : le dépôt est public, elles restent en local.
 PROJET.md
 reference/
+
+# outillage local
+.claude/

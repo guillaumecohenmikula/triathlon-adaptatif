@@ -34,6 +34,31 @@ export const dateOf = (week: string, day: string) => {
 export const dayLabel = (week: string, day: string) =>
   dateOf(week, day).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 
+/** Clé de la semaine qui contient une date ISO donnée. */
+export const weekOf = (iso: string) => mondayKey(parseISO(iso));
+
+/** Décale une clé de semaine d'un nombre de semaines, positif ou négatif. */
+export const shiftWeek = (week: string, weeks: number) => {
+  const d = parseISO(week);
+  d.setDate(d.getDate() + weeks * 7);
+  return toISO(d);
+};
+
+/** Nombre de semaines entre deux clés de semaine, négatif si `b` est dans le passé. */
+export const weeksBetween = (a: string, b: string) =>
+  Math.round((parseISO(b).getTime() - parseISO(a).getTime()) / (7 * 86_400_000));
+
+/**
+ * Index du jour à partir duquel une semaine est encore modifiable.
+ * Semaine passée : tout est figé. Semaine à venir : rien ne l'est. Semaine en cours : aujourd'hui.
+ */
+export const frozenUntil = (week: string, now: Date = new Date()) => {
+  const current = mondayKey(now);
+  if (week < current) return 7;
+  if (week > current) return 0;
+  return todayIndex(now);
+};
+
 /** Index du jour courant, lundi = 0. Sert à savoir ce qui appartient au passé. */
 export const todayIndex = (now: Date = new Date()) => (now.getDay() + 6) % 7;
 

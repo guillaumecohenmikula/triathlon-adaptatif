@@ -106,6 +106,9 @@ export interface Phase {
   focus: string;
 }
 
+/** Les créneaux déclarés, indexés par jour de la semaine. */
+export type Slots = Record<string, { place: PlaceId; duration: number }>;
+
 /** Un créneau hebdomadaire déclaré par l'utilisateur. */
 export interface Slot {
   day: string;

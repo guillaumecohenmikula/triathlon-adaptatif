@@ -8,6 +8,7 @@ import type {
   Phase,
   PlacedSession,
   Slot,
+  Slots,
 } from "../data/types";
 import { allocate, consume, emptyState, intensityCaps, orderedPlan } from "./buildWeek";
 import type { Deficits } from "./deficits";
@@ -20,6 +21,11 @@ export interface StoredWeek {
   cancelled: string[];
   /** Blocs libérés qui attendent encore une place. Absent sur les semaines écrites avant la v2. */
   orphans?: BlockId[];
+  /**
+   * Créneaux propres à cette semaine. Absent tant que l'utilisateur n'a rien changé :
+   * on retombe alors sur le schéma habituel des réglages.
+   */
+  slots?: Slots;
   /** Empreinte des réglages ayant servi à la génération. */
   stamp: string;
 }

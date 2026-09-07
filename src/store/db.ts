@@ -5,13 +5,12 @@ import type {
   GoalId,
   JournalEntry,
   ModeId,
-  PlaceId,
+  Slots,
   Zones,
 } from "../data/types";
 import type { StoredWeek } from "../engine/replan";
 
-/** Les créneaux déclarés, indexés par jour de la semaine. */
-export type Slots = Record<string, { place: PlaceId; duration: number }>;
+export type { Slots };
 
 export interface Settings {
   goal: GoalId;
