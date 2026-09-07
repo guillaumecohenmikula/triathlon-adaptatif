@@ -1,7 +1,9 @@
 import { BLOCKS } from "../data/blocks";
 import { STATES, WEIGHT } from "../data/settings";
 import type { Discipline, Journal, JournalEntry } from "../data/types";
-import { dayLabel, frDate } from "../lib/date";
+import { WeightTracker } from "../components/WeightTracker";
+import { dayLabel, frDate, humanDuration } from "../lib/date";
+import type { WeightRow } from "../store/db";
 import { DISC, INK, LINE, MUTED } from "../theme";
 
 interface WeekSummary {
@@ -29,19 +31,26 @@ export function summarize(journal: Journal): WeekSummary[] {
   return Object.values(byWeek).sort((a, b) => (a.week < b.week ? 1 : -1));
 }
 
-export function History({ journal, week }: { journal: Journal; week: string }) {
-  const history = summarize(journal);
+interface Props {
+  journal: Journal;
+  week: string;
+  weights: WeightRow[];
+  onRecordWeight: (week: string, kg: number) => void;
+}
 
-  if (history.length === 0) {
-    return (
-      <p className="text-sm" style={{ color: MUTED }}>
-        Rien pour l'instant. Marque tes séances et elles s'accumulent ici.
-      </p>
-    );
-  }
+export function History({ journal, week, weights, onRecordWeight }: Props) {
+  const history = summarize(journal);
 
   return (
     <div>
+      <WeightTracker weights={weights} week={week} onRecord={onRecordWeight} />
+
+      {history.length === 0 && (
+        <p className="text-sm" style={{ color: MUTED }}>
+          Rien pour l'instant. Marque tes séances et elles s'accumulent ici.
+        </p>
+      )}
+
       {history.map((w) => (
         <div key={w.week} className="mb-3 p-3" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           <div className="flex justify-between mb-2">
@@ -50,7 +59,7 @@ export function History({ journal, week }: { journal: Journal; week: string }) {
               {w.week === week ? " · en cours" : ""}
             </p>
             <p className="m-0 text-xs" style={{ color: MUTED }}>
-              {w.done}/{w.entries.length} séances · {Math.round(w.total)} min
+              {w.done}/{w.entries.length} séances · {humanDuration(Math.round(w.total))}
             </p>
           </div>
 

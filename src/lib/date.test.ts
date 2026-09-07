@@ -4,6 +4,7 @@ import {
   dayLabel,
   frDate,
   frozenUntil,
+  humanDuration,
   isToday,
   mondayKey,
   shiftWeek,
@@ -101,5 +102,18 @@ describe("ce qui est figé selon la semaine consultée", () => {
   it("fige la semaine en cours jusqu'à aujourd'hui", () => {
     expect(frozenUntil("2026-09-07", jeudi)).toBe(3);
     expect(frozenUntil("2026-09-07", lundi)).toBe(0);
+  });
+});
+
+describe("durées lisibles", () => {
+  it("garde les minutes sous une heure", () => {
+    expect(humanDuration(45)).toBe("45 min");
+    expect(humanDuration(0)).toBe("0 min");
+  });
+
+  it("passe en heures au-delà", () => {
+    expect(humanDuration(60)).toBe("1 h");
+    expect(humanDuration(255)).toBe("4 h 15");
+    expect(humanDuration(365)).toBe("6 h 05");
   });
 });

@@ -15,6 +15,7 @@ import { Settings } from "./screens/Settings";
 import { Week } from "./screens/Week";
 import { useJournal } from "./store/useJournal";
 import { useSettings } from "./store/useSettings";
+import { useWeights } from "./store/useWeights";
 import { useWeek } from "./store/useWeek";
 import { INK, LINE, MUTED, PAPER } from "./theme";
 
@@ -27,6 +28,7 @@ export default function App() {
 
   const { settings, loaded, update } = useSettings();
   const { journal, mark } = useJournal();
+  const { weights, record } = useWeights();
   const { goal, mode, zones, raceDate, access, slots: defaultSlots } = settings;
 
   const currentWeek = useMemo(() => mondayKey(), []);
@@ -216,7 +218,14 @@ export default function App() {
           />
         )}
 
-        {ready && !opened && tab === "historique" && <History journal={journal} week={currentWeek} />}
+        {ready && !opened && tab === "historique" && (
+          <History
+            journal={journal}
+            week={currentWeek}
+            weights={weights}
+            onRecordWeight={record}
+          />
+        )}
 
         {ready && !opened && tab === "reglages" && (
           <Settings

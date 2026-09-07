@@ -65,3 +65,11 @@ export const todayIndex = (now: Date = new Date()) => (now.getDay() + 6) % 7;
 /** Le jour appartient-il à la semaine en cours, et est-il aujourd'hui ? */
 export const isToday = (week: string, day: string, now: Date = new Date()) =>
   toISO(dateOf(week, day)) === toISO(now);
+
+/** Durée en minutes rendue lisible : « 45 min », « 1 h », « 4 h 15 ». */
+export const humanDuration = (minutes: number) => {
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m === 0 ? `${h} h` : `${h} h ${String(m).padStart(2, "0")}`;
+};

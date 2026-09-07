@@ -33,6 +33,12 @@ export interface JournalRow extends JournalEntry {
 /** La semaine figée, adressée par son lundi ISO. */
 export type WeekRow = StoredWeek;
 
+/** Une pesée, une par semaine, adressée par le lundi ISO. */
+export interface WeightRow {
+  week: string;
+  kg: number;
+}
+
 export const DEFAULTS: Settings = {
   goal: "M",
   mode: "mixte",
@@ -61,6 +67,7 @@ export const db = new Dexie("triathlon") as Dexie & {
   settings: Table<SettingsRow, string>;
   journal: Table<JournalRow, string>;
   weeks: Table<WeekRow, string>;
+  weights: Table<WeightRow, string>;
 };
 
 db.version(1).stores({
@@ -74,6 +81,14 @@ db.version(2).stores({
   settings: "key",
   journal: "key, week",
   weeks: "week",
+});
+
+/* v3 : suivi du poids, une pesée par semaine. */
+db.version(3).stores({
+  settings: "key",
+  journal: "key, week",
+  weeks: "week",
+  weights: "week",
 });
 
 export const journalKey = (week: string, day: string) => `${week}|${day}`;

@@ -14,7 +14,7 @@ import type {
 } from "../data/types";
 import { intensityMix } from "../engine/buildWeek";
 import type { Deficits } from "../engine/deficits";
-import { dayLabel, isToday } from "../lib/date";
+import { dayLabel, humanDuration, isToday } from "../lib/date";
 import { DISC, INK, LINE, MUTED, WARN_BG, WARN_TX } from "../theme";
 
 interface Props {
@@ -82,6 +82,7 @@ export function Week({
   const enough = slotCount >= phase.minSlots;
   const mix = intensityMix(placed);
   const fillers = placed.filter((s) => s.filler).length;
+  const volume = placed.reduce((a, s) => a + s.blocks.reduce((x, b) => x + b.dur, 0), 0);
   const lagging = (Object.keys(def.byDisc) as Discipline[]).filter((d) => (def.byDisc[d] ?? 0) > 0.2);
 
   return (
@@ -234,8 +235,9 @@ export function Week({
       >
         <p className="m-0 text-xs" style={{ color: enough ? MUTED : WARN_TX }}>
           {enough
-            ? `${slotCount} créneaux — calage correct`
-            : `${slotCount} créneau${slotCount > 1 ? "x" : ""} — il en faut ${phase.minSlots}`}
+            ? `${slotCount} créneaux`
+            : `${slotCount} créneau${slotCount > 1 ? "x" : ""}, il en faut ${phase.minSlots}`}
+          {volume > 0 ? ` · ${humanDuration(volume)} prévues` : ""}
           {" · "}
           {showInfo ? "masquer le détail" : "voir le détail"}
         </p>
