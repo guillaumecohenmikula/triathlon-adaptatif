@@ -17,6 +17,7 @@ import { Week } from "./screens/Week";
 import { useJournal } from "./store/useJournal";
 import { useSettings } from "./store/useSettings";
 import { useWeights } from "./store/useWeights";
+import { useSync } from "./sync/useSync";
 import { useWeek } from "./store/useWeek";
 import { INK, LINE, MUTED, PAPER } from "./theme";
 
@@ -30,6 +31,7 @@ export default function App() {
   const { settings, loaded, update } = useSettings();
   const { journal, mark } = useJournal();
   const { weights, record } = useWeights();
+  const sync = useSync();
   const { goal, mode, zones, raceDate, access, slots: defaultSlots, swimTest } = settings;
 
   const currentWeek = useMemo(() => mondayKey(), []);
@@ -249,6 +251,7 @@ export default function App() {
           <Settings
             settings={settings}
             today={currentWeek}
+            sync={sync}
             onChange={update}
             onShowPeriods={() => setTab("periodes")}
             onShowWeek={() => setTab("semaine")}

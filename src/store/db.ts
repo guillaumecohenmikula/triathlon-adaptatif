@@ -30,22 +30,38 @@ export interface Settings {
   swimTest?: SwimTest;
 }
 
-export interface SettingsRow extends Settings {
+/**
+ * Horodatage local de chaque enregistrement. C'est lui qui permet à la synchronisation
+ * de savoir quoi pousser, et au serveur d'arbitrer « le plus récent gagne ».
+ */
+export interface Synced {
+  updatedAt: number;
+  /** Pierre tombale : une suppression doit se propager aux autres appareils. */
+  deleted?: boolean;
+}
+
+export interface SettingsRow extends Settings, Synced {
   key: "app";
 }
 
 /** Une entrée de journal, adressée par `semaine|jour`. */
-export interface JournalRow extends JournalEntry {
+export interface JournalRow extends JournalEntry, Synced {
   key: string;
 }
 
 /** La semaine figée, adressée par son lundi ISO. */
-export type WeekRow = StoredWeek;
+export type WeekRow = StoredWeek & Synced;
 
 /** Une pesée, une par semaine, adressée par le lundi ISO. */
-export interface WeightRow {
+export interface WeightRow extends Synced {
   week: string;
   kg: number;
+}
+
+/** Petites valeurs de service : date de dernière synchronisation, identifiant d'appareil. */
+export interface MetaRow {
+  key: string;
+  value: unknown;
 }
 
 export const DEFAULTS: Settings = {
@@ -77,6 +93,7 @@ export const db = new Dexie("triathlon") as Dexie & {
   journal: Table<JournalRow, string>;
   weeks: Table<WeekRow, string>;
   weights: Table<WeightRow, string>;
+  meta: Table<MetaRow, string>;
 };
 
 db.version(1).stores({
@@ -99,5 +116,27 @@ db.version(3).stores({
   weeks: "week",
   weights: "week",
 });
+
+/* v4 : chaque enregistrement s'horodate, condition de la synchronisation. */
+db.version(4)
+  .stores({
+    settings: "key, updatedAt",
+    journal: "key, week, updatedAt",
+    weeks: "week, updatedAt",
+    weights: "week, updatedAt",
+    meta: "key",
+  })
+  .upgrade(async (tx) => {
+    // L'existant est daté d'aujourd'hui : il sera poussé au premier passage.
+    const now = Date.now();
+    for (const name of ["settings", "journal", "weeks", "weights"]) {
+      await tx.table(name).toCollection().modify((row: Partial<Synced>) => {
+        row.updatedAt ??= now;
+      });
+    }
+  });
+
+/** Horodate un enregistrement au moment de l'écrire. */
+export const stamp = <T,>(row: T): T & Synced => ({ ...row, updatedAt: Date.now() });
 
 export const journalKey = (week: string, day: string) => `${week}|${day}`;

@@ -1,6 +1,6 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo } from "react";
-import { db } from "./db";
+import { db, stamp } from "./db";
 import type { WeightRow } from "./db";
 
 export interface WeightStore {
@@ -12,15 +12,21 @@ export interface WeightStore {
 
 export function useWeights(): WeightStore {
   const rows = useLiveQuery(() => db.weights.toArray(), [], []);
-  const weights = useMemo(() => [...rows].sort((a, b) => a.week.localeCompare(b.week)), [rows]);
+  const weights = useMemo(
+    () => rows.filter((r) => !r.deleted).sort((a, b) => a.week.localeCompare(b.week)),
+    [rows],
+  );
 
   return {
     weights,
     record: (week, kg) => {
-      void db.weights.put({ week, kg });
+      void db.weights.put(stamp({ week, kg, deleted: false }));
     },
     remove: (week) => {
-      void db.weights.delete(week);
+      void db.transaction("rw", db.weights, async () => {
+        const row = await db.weights.get(week);
+        if (row) await db.weights.put(stamp({ ...row, deleted: true }));
+      });
     },
   };
 }

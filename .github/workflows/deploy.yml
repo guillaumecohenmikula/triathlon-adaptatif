@@ -27,6 +27,11 @@ jobs:
       # On ne déploie pas un moteur cassé.
       - run: npm test
       - run: npm run build
+        env:
+          # Valeurs publiques par conception : la barrière réelle est la RLS côté Supabase.
+          # Absentes, le build réussit et l'app tourne simplement sans synchronisation.
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -1,19 +1,22 @@
 import { SwimTest } from "../components/SwimTest";
+import { SyncPanel } from "../components/SyncPanel";
 import { ACCESS, GOALS, MODES, ZONES } from "../data/settings";
 import type { AccessId, GoalId, ModeId, ZoneId } from "../data/types";
 import type { Settings as SettingsValues } from "../store/db";
+import type { SyncStore } from "../sync/useSync";
 import { INK, LINE, MUTED, WARN_BG, WARN_TX } from "../theme";
 
 interface Props {
   settings: SettingsValues;
   /** Lundi ISO de la semaine en cours, pour dater le test de natation. */
   today: string;
+  sync: SyncStore;
   onChange: (patch: Partial<SettingsValues>) => void;
   onShowPeriods: () => void;
   onShowWeek: () => void;
 }
 
-export function Settings({ settings, today, onChange, onShowPeriods, onShowWeek }: Props) {
+export function Settings({ settings, today, sync, onChange, onShowPeriods, onShowWeek }: Props) {
   const { goal, mode, zones, raceDate, access } = settings;
 
   const card = (selected: boolean) => ({
@@ -138,6 +141,10 @@ export function Settings({ settings, today, onChange, onShowPeriods, onShowWeek 
           impossibles.
         </div>
       )}
+
+      <div className="mb-5">
+        <SyncPanel sync={sync} />
+      </div>
 
       <button
         onClick={onShowPeriods}

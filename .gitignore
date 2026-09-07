@@ -11,3 +11,7 @@ reference/
 
 # outillage local
 .claude/
+
+# clés locales
+.env
+.env.local

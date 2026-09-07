@@ -1,7 +1,7 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo } from "react";
 import type { Journal, PlacedBlock, PlaceId, SessionState } from "../data/types";
-import { db, journalKey } from "./db";
+import { db, journalKey, stamp } from "./db";
 
 export interface JournalStore {
   journal: Journal;
@@ -21,10 +21,12 @@ export function useJournal(): JournalStore {
   const journal: Journal = useMemo(
     () =>
       Object.fromEntries(
-        rows.map((r) => [
+        rows
+          .filter((r) => !r.deleted)
+          .map((r) => [
           r.key,
-          { week: r.week, day: r.day, place: r.place, blocks: r.blocks, state: r.state },
-        ]),
+            { week: r.week, day: r.day, place: r.place, blocks: r.blocks, state: r.state },
+          ]),
       ),
     [rows],
   );
@@ -39,8 +41,13 @@ export function useJournal(): JournalStore {
     const key = journalKey(week, day);
     void db.transaction("rw", db.journal, async () => {
       const existing = await db.journal.get(key);
-      if (existing && existing.state === state) await db.journal.delete(key);
-      else await db.journal.put({ key, week, day, place, blocks, state });
+      // Re-cliquer le même état efface le bilan. On garde une trace pour que la
+      // suppression se propage aux autres appareils au lieu de réapparaître.
+      if (existing && !existing.deleted && existing.state === state) {
+        await db.journal.put(stamp({ ...existing, deleted: true }));
+      } else {
+        await db.journal.put(stamp({ key, week, day, place, blocks, state, deleted: false }));
+      }
     });
   };
 

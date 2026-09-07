@@ -1,6 +1,6 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo } from "react";
-import { DEFAULTS, db } from "./db";
+import { DEFAULTS, db, stamp } from "./db";
 import type { Settings } from "./db";
 
 export interface SettingsStore {
@@ -20,7 +20,7 @@ export function useSettings(): SettingsStore {
   );
 
   const update = (patch: Partial<Settings>) => {
-    void db.settings.put({ key: "app", ...settings, ...patch });
+    void db.settings.put(stamp({ key: "app" as const, ...settings, ...patch }));
   };
 
   return { settings, loaded: wrapped !== undefined, update };

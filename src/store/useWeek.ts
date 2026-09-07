@@ -2,7 +2,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import type { BlockId } from "../data/blocks";
 import type { PlacedSession, Slots } from "../data/types";
 import type { StoredWeek } from "../engine/replan";
-import { db } from "./db";
+import { db, stamp } from "./db";
 
 export interface WeekStore {
   stored?: StoredWeek;
@@ -28,7 +28,7 @@ export function useWeek(week: string): WeekStore {
         (await db.weeks.get(week)) ??
         // Semaine encore jamais générée : le prochain rendu la remplira.
         ({ week, sessions: [], cancelled: [], orphans: [], stamp: "" } satisfies StoredWeek);
-      await db.weeks.put(change(row));
+      await db.weeks.put(stamp(change(row)));
     });
   };
 
