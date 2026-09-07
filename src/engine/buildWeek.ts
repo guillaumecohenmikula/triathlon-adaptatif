@@ -158,7 +158,49 @@ export function allocate(
     placed.push({ ...slot, blocks });
   });
 
-  return placed;
+  // Passe de repli : un créneau déclaré ne doit pas rester vide.
+  //
+  // Le plan d'une phase est fini, et chaque bloc ne sert qu'une fois par semaine. Dès qu'on
+  // déclare plus de créneaux que le plan n'a de blocs pour ce lieu, les derniers restaient
+  // vides. On y remet alors une séance déjà posée, en n'autorisant que de la basse intensité
+  // non dure : une deuxième sortie facile augmente le volume sans toucher au ratio 80/20 ni
+  // ajouter de la fatigue.
+  const filled = new Set(placed.map((s) => s.day));
+
+  // Combien de fois chaque bloc est déjà posé : le repli prend le moins servi, pour ne pas
+  // proposer trois fois la même séance quand plusieurs créneaux sont surnuméraires.
+  const seen = new Map<BlockId, number>();
+  placed.forEach((s) => s.blocks.forEach((b) => seen.set(b.id, (seen.get(b.id) ?? 0) + 1)));
+
+  slots
+    .filter((s) => !filled.has(s.day))
+    .forEach((slot) => {
+      const candidates = plan.filter((id) => {
+        const b = BLOCKS[id];
+        return (
+          state.used.has(id) &&
+          b.place === slot.place &&
+          b.min <= slot.duration &&
+          !b.hard &&
+          b.zone === "basse"
+        );
+      });
+      if (candidates.length === 0) return;
+
+      const again = candidates.reduce((best, id) =>
+        (seen.get(id) ?? 0) < (seen.get(best) ?? 0) ? id : best,
+      );
+      seen.set(again, (seen.get(again) ?? 0) + 1);
+
+      const dur = Math.round(Math.min(BLOCKS[again].max, slot.duration * factor) / 5) * 5;
+      placed.push({
+        ...slot,
+        blocks: [{ id: again, dur: Math.max(BLOCKS[again].min, dur) }],
+        filler: true,
+      });
+    });
+
+  return placed.sort((a, b) => slots.indexOf(a) - slots.indexOf(b) || 0);
 }
 
 export interface BuiltWeek {

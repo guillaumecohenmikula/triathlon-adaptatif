@@ -107,6 +107,8 @@ export function resolveWeek(input: ResolveInput): ResolvedWeek {
     if (isLocked(s)) return true;
     if (settingsChanged) return false;
     if (isCancelled(s.day)) return false;
+    // Un repli n'est qu'un bouche-trou : son créneau reste disponible pour une séance du plan.
+    if (s.filler) return false;
     const slot = slotOf.get(s.day);
     // Un créneau modifié (lieu ou durée) redevient libre : la séance ne lui correspond plus.
     return Boolean(slot && sameSlot(s, slot));
@@ -118,7 +120,10 @@ export function resolveWeek(input: ResolveInput): ResolvedWeek {
   // On y ajoute ceux qui attendaient déjà une place : tant qu'un créneau ne s'ouvre pas,
   // un orphelin reste candidat prioritaire au lieu de disparaître à la première écriture.
   const freedIds = [
-    ...previous.filter((s) => !kept.has(s.day)).flatMap((s) => s.blocks.map((b) => b.id)),
+    // Un repli abandonné n'est pas une séance perdue : il ne devient pas prioritaire.
+    ...previous
+      .filter((s) => !kept.has(s.day) && !s.filler)
+      .flatMap((s) => s.blocks.map((b) => b.id)),
     ...(stored?.orphans ?? []),
   ].filter((id) => available(id, input.access) && plan.includes(id));
 

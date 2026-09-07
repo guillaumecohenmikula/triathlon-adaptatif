@@ -17,6 +17,7 @@ export const fullAccess = (over: Partial<Access> = {}): Access => ({
   veloSalle: true,
   veloRoute: true,
   homeTrainer: true,
+  tapis: true,
   ...over,
 });
 

@@ -90,3 +90,61 @@ describe("mesure de la répartition", () => {
     expect(mix.part.haute).toBe(0);
   });
 });
+
+describe("tapis de course", () => {
+  const gymWeek = (access: ReturnType<typeof fullAccess>) =>
+    buildWeek(
+      [gym("Lundi"), gym("Mardi"), gym("Mercredi")],
+      phase("base"),
+      false,
+      noDeficit,
+      access,
+      "perf",
+    );
+
+  it("ne propose aucune course en salle sans tapis", () => {
+    const r = gymWeek(fullAccess({ tapis: false }));
+    expect(ids(r).some((id) => id.startsWith("runGym"))).toBe(false);
+  });
+
+  it("ouvre la course en salle dès que le tapis est coché", () => {
+    const r = gymWeek(fullAccess());
+    expect(ids(r)).toContain("runGym");
+  });
+
+  it("compte la course sur tapis en basse intensité", () => {
+    const r = gymWeek(fullAccess());
+    expect(BLOCKS.runGym.zone).toBe("basse");
+    expect(BLOCKS.runGymInt.zone).toBe("haute");
+    expect(intensityMix(r.placed).part.basse).toBeGreaterThan(50);
+  });
+
+  it("n'ajoute pas une deuxième séance dure de course en phase développement", () => {
+    const r = buildWeek(
+      [out("Lundi"), gym("Mardi"), gym("Mercredi")],
+      phase("dev"),
+      false,
+      noDeficit,
+      fullAccess(),
+      "perf",
+    );
+    const hard = ids(r).filter((id) => BLOCKS[id].zone === "haute");
+    expect(hard.length).toBeLessThanOrEqual(1);
+  });
+});
+
+describe("répétitions sur créneaux surnuméraires", () => {
+  const fiveGym = [gym("Lundi"), gym("Mardi"), gym("Mercredi"), gym("Jeudi"), gym("Vendredi")];
+
+  it("alterne les séances répétées au lieu de servir toujours la même", () => {
+    const r = week(fiveGym, false, "base");
+    const fillers = r.placed.filter((s) => s.filler).flatMap((s) => s.blocks.map((b) => b.id));
+    expect(fillers.length).toBeGreaterThan(1);
+    // Deux créneaux de repli, deux séances faciles différentes.
+    expect(new Set(fillers).size).toBe(fillers.length);
+  });
+
+  it("ne laisse aucun des cinq créneaux vide", () => {
+    expect(week(fiveGym, false, "base").placed).toHaveLength(5);
+  });
+});

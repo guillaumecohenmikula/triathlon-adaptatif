@@ -6,6 +6,8 @@ const RAW = {
   quality: { label: "Fractionné", disc: "course", place: "exterieur", needs: ["exterieur"], min: 60, max: 80, zone: "haute", hard: true, stack: false },
   tempo: { label: "Sortie soutenue", disc: "course", place: "exterieur", needs: ["exterieur"], min: 45, max: 60, zone: "seuil", hard: true, stack: false, group: "courseDure" },
   brick: { label: "Enchaînement vélo-course", disc: "course", place: "exterieur", needs: ["exterieur", "veloRoute"], min: 75, max: 110, zone: "seuil", hard: true, stack: false },
+  runGym: { label: "Course sur tapis, endurance", disc: "course", place: "salle", needs: ["tapis"], min: 40, max: 75, zone: "basse", hard: false, stack: true },
+  runGymInt: { label: "Course sur tapis, fractionné", disc: "course", place: "salle", needs: ["tapis"], min: 60, max: 80, zone: "haute", hard: true, stack: false },
   bikeLong: { label: "Vélo route long", disc: "velo", place: "exterieur", needs: ["veloRoute"], min: 75, max: 150, zone: "basse", hard: false, stack: false },
   bikeGym: { label: "Vélo d'appartement, endurance", disc: "velo", place: "salle", needs: ["veloSalle"], min: 40, max: 75, zone: "basse", hard: false, stack: true, group: "veloEnd" },
   bikeGymInt: { label: "Vélo d'appartement, intervalles", disc: "velo", place: "salle", needs: ["veloSalle"], min: 55, max: 75, zone: "haute", hard: true, stack: true, group: "veloInt" },

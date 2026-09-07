@@ -46,8 +46,10 @@ describe("règle 6, non-duplication de groupe", () => {
       { day: "Samedi", place: "piscine", duration: 60 },
     ];
     const r = buildWeek(slots, phase("base"), false, noDeficit, fullAccess(), "perf");
-    const groups = ids(r)
-      .map((id) => BLOCKS[id].group)
+    // Les séances de repli répètent un bloc déjà posé : elles sortent du décompte.
+    const groups = r.placed
+      .filter((s) => !s.filler)
+      .flatMap((s) => s.blocks.map((b) => BLOCKS[b.id].group))
       .filter((g): g is NonNullable<typeof g> => Boolean(g));
     expect(groups).toHaveLength(new Set(groups).size);
   });

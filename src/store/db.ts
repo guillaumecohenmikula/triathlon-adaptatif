@@ -46,6 +46,7 @@ export const DEFAULTS: Settings = {
     veloSalle: true,
     veloRoute: false,
     homeTrainer: false,
+    tapis: false,
   },
   slots: {
     Mardi: { place: "salle", duration: 90 },

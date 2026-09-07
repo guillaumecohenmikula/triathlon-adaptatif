@@ -81,6 +81,7 @@ export function Week({
   const past = frozen >= 7;
   const enough = slotCount >= phase.minSlots;
   const mix = intensityMix(placed);
+  const fillers = placed.filter((s) => s.filler).length;
   const lagging = (Object.keys(def.byDisc) as Discipline[]).filter((d) => (def.byDisc[d] ?? 0) > 0.2);
 
   return (
@@ -265,6 +266,14 @@ export function Week({
                 ))}
               </div>
             </div>
+          )}
+
+          {fillers > 0 && (
+            <p className="m-0 mb-2">
+              {fillers} séance{fillers > 1 ? "s" : ""} ajoutée{fillers > 1 ? "s" : ""} pour ne pas
+              laisser de créneau vide : le plan de la phase n'avait plus de séance neuve pour ce
+              lieu, donc une séance facile est répétée.
+            </p>
           )}
 
           {def.weeks > 0 && lagging.length > 0 && (

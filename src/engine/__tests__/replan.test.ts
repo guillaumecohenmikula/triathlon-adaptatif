@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { BLOCKS } from "../../data/blocks";
 import type { BlockId } from "../../data/blocks";
 import type { Journal, JournalEntry, PlacedSession, Slot } from "../../data/types";
 import type { ResolveInput, StoredWeek } from "../replan";
@@ -27,7 +28,9 @@ const resolve = (over: Partial<ResolveInput> = {}) =>
     phase: phase("base"),
     easyWeek: false,
     def: noDeficit,
-    access: fullAccess(),
+    // Sans tapis : ces tests portent sur la mécanique de replanification, pas sur le
+    // catalogue de blocs. Un créneau en salle n'y offre donc que du vélo et du renfo.
+    access: fullAccess({ tapis: false }),
     mode: "perf",
     ...over,
   });
@@ -59,11 +62,14 @@ const done = (day: string): Journal => {
 };
 
 describe("première génération", () => {
-  it("remplit les créneaux qu'elle peut et laisse les autres vides", () => {
+  it("occupe tous les créneaux, quitte à répéter une séance facile", () => {
     const r = resolve();
     expect(ids(r.sessions, "Lundi")).toEqual(["bikeGym"]);
     expect(ids(r.sessions, "Mardi")).toEqual(["strLow", "strUp"]);
-    expect(r.sessions.map((s) => s.day)).toEqual(["Lundi", "Mardi"]);
+    // Le plan de la phase est épuisé pour ce lieu : les deux derniers créneaux reçoivent
+    // une répétition de basse intensité plutôt que de rester vides.
+    expect(r.sessions.map((s) => s.day)).toEqual(["Lundi", "Mardi", "Mercredi", "Jeudi"]);
+    expect(r.sessions.filter((s) => s.filler).map((s) => s.day)).toEqual(["Mercredi", "Jeudi"]);
     expect(r.orphans).toHaveLength(0);
     expect(r.changed).toBe(true);
   });
@@ -136,11 +142,10 @@ describe("annulation d'un créneau", () => {
     const annule = resolve({ stored: store(first.sessions), cancelled: ["Mardi"] });
     const retabli = resolve({ stored: store(annule.sessions, ["Mardi"]), cancelled: [] });
 
-    // Conséquence directe de la règle « seuls les créneaux libres bougent » : le mercredi
-    // garde ce qu'il a récupéré, le mardi redevient un créneau libre mais reste vide
-    // faute de bloc encore disponible. Rien n'est perdu, la séance a juste changé de jour.
+    // Conséquence de la règle « seuls les créneaux libres bougent » : le mercredi garde ce
+    // qu'il a récupéré. Le mardi redevient libre et reçoit un repli, faute de bloc neuf.
     expect(ids(retabli.sessions, "Mercredi")).toEqual(["strLow", "strUp"]);
-    expect(retabli.sessions.find((s) => s.day === "Mardi")).toBeUndefined();
+    expect(retabli.sessions.find((s) => s.day === "Mardi")?.filler).toBe(true);
     expect(retabli.orphans).toHaveLength(0);
   });
 });
@@ -169,11 +174,11 @@ describe("ce qui est intouchable", () => {
     expect(ids(after.sessions, "Lundi")).toEqual(["bikeGym"]);
   });
 
-  it("ne consomme pas deux fois un bloc déjà posé dans la semaine", () => {
+  it("ne pose jamais deux fois le même bloc du plan", () => {
     const first = resolve();
     const after = resolve({ stored: store(first.sessions), cancelled: ["Mardi"] });
-    const all = after.sessions.flatMap((s) => s.blocks.map((b) => b.id));
-    expect(all).toHaveLength(new Set(all).size);
+    const planned = after.sessions.filter((s) => !s.filler).flatMap((s) => s.blocks.map((b) => b.id));
+    expect(planned).toHaveLength(new Set(planned).size);
   });
 });
 
@@ -213,8 +218,51 @@ describe("empreinte des réglages", () => {
       goal: "M",
       mode: "perf",
       raceDate: "2027-06-13",
-      access: fullAccess({ piscine: false }),
+      access: fullAccess({ piscine: false, tapis: false }),
     });
     expect(a).not.toBe(b);
+  });
+});
+
+describe("créneaux surnuméraires", () => {
+  const isFiller = (r: ReturnType<typeof resolve>, day: string) =>
+    r.sessions.find((s) => s.day === day)?.filler === true;
+
+  it("ne laisse aucun créneau déclaré sans séance", () => {
+    const r = resolve();
+    expect(r.sessions).toHaveLength(FOUR_GYM.length);
+  });
+
+  it("ne répète qu'une séance facile, jamais une séance dure", () => {
+    const r = resolve();
+    r.sessions
+      .filter((s) => s.filler)
+      .forEach((s) => {
+        s.blocks.forEach((b) => {
+          expect(BLOCKS[b.id].hard).toBe(false);
+          expect(BLOCKS[b.id].zone).toBe("basse");
+        });
+      });
+  });
+
+  it("cède son créneau dès qu'une séance du plan en a besoin", () => {
+    const first = resolve();
+    expect(isFiller(first, "Mercredi")).toBe(true);
+
+    // Le mardi saute : ses deux blocs de renfo doivent reprendre le créneau du mercredi.
+    const after = resolve({ stored: store(first.sessions), cancelled: ["Mardi"] });
+    expect(ids(after.sessions, "Mercredi")).toEqual(["strLow", "strUp"]);
+    expect(isFiller(after, "Mercredi")).toBe(false);
+  });
+
+  it("n'invente rien quand aucun bloc du lieu n'a été posé", () => {
+    const r = resolve({
+      slots: [
+        { day: "Lundi", place: "salle", duration: 90 },
+        { day: "Mardi", place: "piscine", duration: 60 },
+      ],
+      access: fullAccess({ piscine: false, tapis: false }),
+    });
+    expect(r.sessions.map((s) => s.day)).toEqual(["Lundi"]);
   });
 });

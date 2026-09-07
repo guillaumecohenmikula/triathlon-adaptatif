@@ -22,6 +22,16 @@ const RAW = {
     { t: "Transition", d: 3, x: "Changement de chaussures chronométré, on s'entraîne aussi à ça" },
     { t: "Course", d: 20, x: "Départ volontairement contenu, les jambes reviennent vers la 8e minute" },
   ],
+  runGym: [
+    { t: "Échauffement", d: 10, x: "Marche rapide puis trot très souple, inclinaison 1 %" },
+    { t: "Corps de séance", d: 45, x: "Allure d'endurance, tu dois pouvoir tenir une conversation. Garde 1 % d'inclinaison : sur tapis, elle compense l'absence de résistance de l'air et rapproche l'effort de la course dehors." },
+    { t: "Retour au calme", d: 5, x: "Marche, puis étirements légers mollets et ischios" },
+  ],
+  runGymInt: [
+    { t: "Échauffement", d: 15, x: "12 min de trot progressif, inclinaison 1 %, puis 3 accélérations de 20 s" },
+    { t: "Corps de séance", d: 41, x: "4 × 8 min à l'allure la plus rapide que tu peux tenir sur les quatre séries, 3 min de trot entre chaque. Sur tapis, règle la vitesse avant de partir et n'y touche plus : c'est le meilleur moyen de tenir l'allure." },
+    { t: "Retour au calme", d: 10, x: "10 min très souple" },
+  ],
   bikeLong: [
     { t: "Échauffement", d: 15, x: "Cadence 90, résistance faible" },
     { t: "Corps de séance", d: 90, x: "Endurance, terrain roulant, rester assis dans les bosses" },

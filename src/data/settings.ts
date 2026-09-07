@@ -10,6 +10,7 @@ import type {
 export const ACCESS: { id: AccessId; label: string; hint: string }[] = [
   { id: "exterieur", label: "Courir dehors", hint: "route, parc, chemins" },
   { id: "salle", label: "Salle de sport", hint: "machines et charges libres" },
+  { id: "tapis", label: "Tapis de course", hint: "en salle, pour courir sans sortir" },
   { id: "veloSalle", label: "Vélo d'appartement en salle", hint: "vélo stationnaire ou assault bike" },
   { id: "homeTrainer", label: "Home-trainer chez moi", hint: "vélo + support" },
   { id: "veloRoute", label: "Vélo de route", hint: "pour rouler dehors" },

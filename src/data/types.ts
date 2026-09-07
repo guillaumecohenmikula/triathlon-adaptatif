@@ -17,7 +17,8 @@ export type AccessId =
   | "homeTrainer"
   | "veloRoute"
   | "piscine"
-  | "maison";
+  | "maison"
+  | "tapis";
 
 export type PhaseId = "base" | "dev" | "spe" | "affutage";
 
@@ -124,6 +125,11 @@ export interface PlacedBlock {
 
 export interface PlacedSession extends Slot {
   blocks: PlacedBlock[];
+  /**
+   * Séance de repli : une répétition posée faute de bloc neuf pour ce créneau.
+   * Elle cède la place dès qu'une séance du plan a besoin du créneau.
+   */
+  filler?: boolean;
 }
 
 export interface JournalEntry {
