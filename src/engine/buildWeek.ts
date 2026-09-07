@@ -48,6 +48,17 @@ export function orderedPlan(
     .map((x) => x.id);
 }
 
+/**
+ * Blocs disponibles que le plan de la phase n'a pas retenus. Ils servent de réserve quand
+ * on déclare plus de créneaux que le plan n'a de séances : mieux vaut travailler une partie
+ * du corps que le plan avait écartée que répéter deux fois la même séance.
+ */
+export function reservePlan(plan: BlockId[], access: Access): BlockId[] {
+  return (Object.keys(BLOCKS) as BlockId[]).filter(
+    (id) => !plan.includes(id) && available(id, access),
+  );
+}
+
 /** Ce qui a déjà été consommé dans la semaine. Mutable : l'allocation le remplit au fur et à mesure. */
 export interface AllocState {
   used: Set<BlockId>;
@@ -119,12 +130,19 @@ export function allocate(
   easyWeek: boolean,
   state: AllocState,
   caps: Caps,
+  reserve: BlockId[] = [],
 ): PlacedSession[] {
   const factor = easyWeek ? 0.75 : 1;
   const placed: PlacedSession[] = [];
 
-  const pick = (place: PlaceId, budget: number, noHard: boolean, stackOnly: boolean) =>
-    plan.find((id) => {
+  const pickFrom = (
+    list: BlockId[],
+    place: PlaceId,
+    budget: number,
+    noHard: boolean,
+    stackOnly: boolean,
+  ) =>
+    list.find((id) => {
       const b = BLOCKS[id];
       if (state.used.has(id) || b.place !== place || b.min > budget) return false;
       if (b.group && state.groups.has(b.group)) return false;
@@ -134,6 +152,9 @@ export function allocate(
       if (b.zone === "seuil" && state.threshold >= caps.threshold) return false;
       return true;
     });
+
+  const pick = (place: PlaceId, budget: number, noHard: boolean, stackOnly: boolean) =>
+    pickFrom(plan, place, budget, noHard, stackOnly);
 
   slots.forEach((slot) => {
     const first = pick(slot.place, slot.duration, false, false);
@@ -175,21 +196,31 @@ export function allocate(
   slots
     .filter((s) => !filled.has(s.day))
     .forEach((slot) => {
-      const candidates = plan.filter((id) => {
-        const b = BLOCKS[id];
-        return (
-          state.used.has(id) &&
-          b.place === slot.place &&
-          b.min <= slot.duration &&
-          !b.hard &&
-          b.zone === "basse"
-        );
-      });
-      if (candidates.length === 0) return;
+      // 1. Une séance neuve tirée de la réserve : une partie du corps que le plan avait écartée.
+      //    Jamais de séance dure ici : un créneau en plus doit apporter du volume, pas de
+      //    l'intensité que le plan de la phase n'avait pas prévue.
+      const fresh = pickFrom(reserve, slot.place, slot.duration, true, false);
+      const again =
+        fresh ??
+        // 2. À défaut, on répète la séance facile la moins servie jusqu'ici.
+        plan
+          .filter((id) => {
+            const b = BLOCKS[id];
+            return (
+              state.used.has(id) &&
+              b.place === slot.place &&
+              b.min <= slot.duration &&
+              !b.hard &&
+              b.zone === "basse"
+            );
+          })
+          .reduce<BlockId | undefined>(
+            (best, id) => (!best || (seen.get(id) ?? 0) < (seen.get(best) ?? 0) ? id : best),
+            undefined,
+          );
 
-      const again = candidates.reduce((best, id) =>
-        (seen.get(id) ?? 0) < (seen.get(best) ?? 0) ? id : best,
-      );
+      if (!again) return;
+      if (fresh) consume(state, fresh);
       seen.set(again, (seen.get(again) ?? 0) + 1);
 
       const dur = Math.round(Math.min(BLOCKS[again].max, slot.duration * factor) / 5) * 5;
@@ -220,7 +251,14 @@ export function buildWeek(
 ): BuiltWeek {
   const plan = orderedPlan(phase, mode, def, access);
   const state = emptyState();
-  const placed = allocate(slots, plan, easyWeek, state, intensityCaps(slots.length, easyWeek));
+  const placed = allocate(
+    slots,
+    plan,
+    easyWeek,
+    state,
+    intensityCaps(slots.length, easyWeek),
+    reservePlan(plan, access),
+  );
 
   const dropped = plan.filter((id) => {
     const b = BLOCKS[id];

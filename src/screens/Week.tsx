@@ -271,8 +271,8 @@ export function Week({
           {fillers > 0 && (
             <p className="m-0 mb-2">
               {fillers} séance{fillers > 1 ? "s" : ""} ajoutée{fillers > 1 ? "s" : ""} pour ne pas
-              laisser de créneau vide : le plan de la phase n'avait plus de séance neuve pour ce
-              lieu, donc une séance facile est répétée.
+              laisser de créneau vide. Le plan de la phase était épuisé pour ce lieu, donc l'app a
+              pris une séance facile ailleurs dans le catalogue, ou répété une séance déjà prévue.
             </p>
           )}
 

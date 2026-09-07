@@ -233,16 +233,11 @@ describe("créneaux surnuméraires", () => {
     expect(r.sessions).toHaveLength(FOUR_GYM.length);
   });
 
-  it("ne répète qu'une séance facile, jamais une séance dure", () => {
+  it("n'ajoute jamais de séance dure sur un créneau surnuméraire", () => {
     const r = resolve();
     r.sessions
       .filter((s) => s.filler)
-      .forEach((s) => {
-        s.blocks.forEach((b) => {
-          expect(BLOCKS[b.id].hard).toBe(false);
-          expect(BLOCKS[b.id].zone).toBe("basse");
-        });
-      });
+      .forEach((s) => s.blocks.forEach((b) => expect(BLOCKS[b.id].hard).toBe(false)));
   });
 
   it("cède son créneau dès qu'une séance du plan en a besoin", () => {

@@ -148,3 +148,36 @@ describe("répétitions sur créneaux surnuméraires", () => {
     expect(week(fiveGym, false, "base").placed).toHaveLength(5);
   });
 });
+
+describe("réserve : travailler d'autres parties plutôt que répéter", () => {
+  const many = [gym("Lundi"), gym("Mardi"), gym("Mercredi"), gym("Jeudi"), gym("Vendredi")];
+
+  it("puise dans les blocs que le mode avait écartés avant de répéter", () => {
+    // En mode équilibré, le split haut/bas sort du plan au profit du full body.
+    // Sur des créneaux surnuméraires, il redevient une option utile.
+    const r = buildWeek(many, phase("base"), false, noDeficit, fullAccess(), "mixte");
+    expect(ids(r)).toContain("strUp");
+  });
+
+  it("ne fait entrer aucune séance dure par cette porte", () => {
+    const r = buildWeek(many, phase("base"), false, noDeficit, fullAccess(), "mixte");
+    r.placed
+      .filter((s) => s.filler)
+      .forEach((s) => s.blocks.forEach((b) => expect(BLOCKS[b.id].hard).toBe(false)));
+  });
+
+  it("respecte les groupes : jamais deux blocs différents d'un même groupe", () => {
+    const r = buildWeek(many, phase("base"), false, noDeficit, fullAccess(), "mixte");
+    // Une répétition repose le même bloc, donc le même groupe : c'est attendu.
+    // Ce qui est interdit, c'est deux blocs *différents* du même groupe.
+    const groups = [...new Set(ids(r))]
+      .map((id) => BLOCKS[id].group)
+      .filter((g): g is NonNullable<typeof g> => Boolean(g));
+    expect(groups).toHaveLength(new Set(groups).size);
+  });
+
+  it("garde la basse intensité largement majoritaire malgré le volume", () => {
+    const r = buildWeek(many, phase("base"), false, noDeficit, fullAccess(), "mixte");
+    expect(intensityMix(r.placed).part.basse).toBeGreaterThanOrEqual(75);
+  });
+});
