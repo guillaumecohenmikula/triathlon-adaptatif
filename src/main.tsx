@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { watchForUpdates } from "./pwa";
 
 /**
  * Demande au navigateur de ne pas évincer les données sous pression de stockage.
@@ -10,6 +11,8 @@ import "./index.css";
  * sur l'écran d'accueil, refusé sans conséquence ailleurs.
  */
 void navigator.storage?.persist?.().catch(() => {});
+
+watchForUpdates();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

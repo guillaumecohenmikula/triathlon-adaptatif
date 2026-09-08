@@ -9,6 +9,12 @@ const BASE = '/triathlon-adaptatif/'
 
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? BASE : '/',
+  // Date de compilation, affichée dans les réglages pour vérifier qu'on est à jour.
+  define: {
+    __BUILD__: JSON.stringify(
+      new Date().toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
+    ),
+  },
   plugins: [
     react(),
     tailwindcss(),

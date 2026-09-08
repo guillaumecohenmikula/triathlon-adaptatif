@@ -160,6 +160,10 @@ export function Settings({ settings, today, sync, onChange, onShowPeriods, onSho
       >
         Voir ma semaine
       </button>
+
+      <p className="m-0 mt-5 text-xs text-center" style={{ color: MUTED }}>
+        Version du {__BUILD__}
+      </p>
     </div>
   );
 }
