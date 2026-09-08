@@ -10,9 +10,17 @@ const BASE = '/triathlon-adaptatif/'
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? BASE : '/',
   // Date de compilation, affichée dans les réglages pour vérifier qu'on est à jour.
+  // Forcée à l'heure de Paris : la compilation tourne en UTC sur GitHub, et une
+  // version affichée avec une heure de retard ne permet plus de rien vérifier.
   define: {
     __BUILD__: JSON.stringify(
-      new Date().toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
+      new Date().toLocaleString('fr-FR', {
+        timeZone: 'Europe/Paris',
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
     ),
   },
   plugins: [
