@@ -2,6 +2,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo } from "react";
 import { db, stamp } from "./db";
 import type { WeightRow } from "./db";
+import { track } from "./writes";
 
 export interface WeightStore {
   /** Pesées triées de la plus ancienne à la plus récente. */
@@ -20,13 +21,17 @@ export function useWeights(): WeightStore {
   return {
     weights,
     record: (week, kg) => {
-      void db.weights.put(stamp({ week, kg, deleted: false }));
+      track("Enregistrement de la pesée", () =>
+        db.weights.put(stamp({ week, kg, deleted: false })),
+      );
     },
     remove: (week) => {
-      void db.transaction("rw", db.weights, async () => {
-        const row = await db.weights.get(week);
-        if (row) await db.weights.put(stamp({ ...row, deleted: true }));
-      });
+      track("Suppression de la pesée", () =>
+        db.transaction("rw", db.weights, async () => {
+          const row = await db.weights.get(week);
+          if (row) await db.weights.put(stamp({ ...row, deleted: true }));
+        }),
+      );
     },
   };
 }

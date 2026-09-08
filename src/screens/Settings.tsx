@@ -1,3 +1,4 @@
+import { Diagnostic } from "../components/Diagnostic";
 import { SwimTest } from "../components/SwimTest";
 import { SyncPanel } from "../components/SyncPanel";
 import { ACCESS, GOALS, MODES, ZONES } from "../data/settings";
@@ -161,9 +162,9 @@ export function Settings({ settings, today, sync, onChange, onShowPeriods, onSho
         Voir ma semaine
       </button>
 
-      <p className="m-0 mt-5 text-xs text-center" style={{ color: MUTED }}>
-        Version du {__BUILD__}
-      </p>
+      <div className="mt-6 pt-4" style={{ borderTop: `1px solid ${LINE}` }}>
+        <Diagnostic />
+      </div>
     </div>
   );
 }

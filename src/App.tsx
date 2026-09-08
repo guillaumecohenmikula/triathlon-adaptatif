@@ -16,10 +16,11 @@ import { Settings } from "./screens/Settings";
 import { Week } from "./screens/Week";
 import { useJournal } from "./store/useJournal";
 import { useSettings } from "./store/useSettings";
+import { useWriteAlert } from "./store/useWriteAlert";
 import { useWeights } from "./store/useWeights";
 import { useSync } from "./sync/useSync";
 import { useWeek } from "./store/useWeek";
-import { INK, LINE, MUTED, PAPER } from "./theme";
+import { INK, LINE, MUTED, PAPER, WARN_BG, WARN_TX } from "./theme";
 
 /** Jusqu'où on peut remonter dans le passé. Au-delà, l'historique fait le travail. */
 const PAST_WEEKS = 8;
@@ -32,6 +33,7 @@ export default function App() {
   const { journal, mark } = useJournal();
   const { weights, record } = useWeights();
   const sync = useSync();
+  const writeAlert = useWriteAlert();
   const { goal, mode, zones, raceDate, access, slots: defaultSlots, swimTest } = settings;
 
   const currentWeek = useMemo(() => mondayKey(), []);
@@ -149,6 +151,14 @@ export default function App() {
       }}
     >
       <div className="mx-auto p-4" style={{ maxWidth: 520 }}>
+        {/* Une écriture qui échoue en silence ressemble à une app figée : on le dit. */}
+        {writeAlert && (
+          <div className="p-3 mb-3 text-sm" style={{ background: WARN_BG, color: WARN_TX }}>
+            {writeAlert} Rien n'a été enregistré. Ferme complètement l'app et rouvre-la, puis
+            réessaie.
+          </div>
+        )}
+
         {!ready && (
           <p className="text-sm" style={{ color: MUTED }}>
             Chargement…

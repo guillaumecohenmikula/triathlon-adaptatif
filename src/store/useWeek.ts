@@ -3,6 +3,7 @@ import type { BlockId } from "../data/blocks";
 import type { PlacedSession, Slots } from "../data/types";
 import type { StoredWeek } from "../engine/replan";
 import { db, stamp } from "./db";
+import { track } from "./writes";
 
 export interface WeekStore {
   stored?: StoredWeek;
@@ -23,13 +24,15 @@ export function useWeek(week: string): WeekStore {
 
   /** Modifie la ligne de la semaine, en la créant au besoin. */
   const patch = (change: (row: StoredWeek) => StoredWeek) => {
-    void db.transaction("rw", db.weeks, async () => {
-      const row =
-        (await db.weeks.get(week)) ??
-        // Semaine encore jamais générée : le prochain rendu la remplira.
-        ({ week, sessions: [], cancelled: [], orphans: [], stamp: "" } satisfies StoredWeek);
-      await db.weeks.put(stamp(change(row)));
-    });
+    track("Enregistrement de la semaine", () =>
+      db.transaction("rw", db.weeks, async () => {
+        const row =
+          (await db.weeks.get(week)) ??
+          // Semaine encore jamais générée : le prochain rendu la remplira.
+          ({ week, sessions: [], cancelled: [], orphans: [], stamp: "" } satisfies StoredWeek);
+        await db.weeks.put(stamp(change(row)));
+      }),
+    );
   };
 
   const save = (
