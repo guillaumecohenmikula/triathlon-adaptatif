@@ -9,13 +9,26 @@ describe("déroulé d'une séance", () => {
     expect(steps.filter((s) => s.kind === "exo").length).toBeGreaterThan(3);
   });
 
-  it("met les segments à l'échelle du créneau réel", () => {
-    // La sortie longue vaut 85 min de segments, ramenés ici à un créneau de 60.
+  it("met les segments à l'échelle de la durée choisie, au total exact", () => {
+    // La sortie longue vaut 85 min de segments, ramenés ici à 60.
     const steps = buildSteps([{ id: "longRun", dur: 60 }], "base", 1, {});
-    const total = steps.reduce((a, s) => a + s.dur, 0);
     expect(steps).toHaveLength(3);
-    expect(total).toBeLessThan(85);
-    expect(total).toBeGreaterThan(45);
+    expect(steps.reduce((a, s) => a + s.dur, 0)).toBe(60);
+  });
+
+  it("garde intacte la série d'intervalles et ajuste l'échauffement et le retour au calme", () => {
+    const short = buildSteps([{ id: "quality", dur: 60 }], "dev", 1, {});
+    const long = buildSteps([{ id: "quality", dur: 80 }], "dev", 1, {});
+    const main = (s: typeof short) => s.find((x) => x.rep)!;
+    expect(main(short).dur).toBe(41);
+    expect(main(long).dur).toBe(41);
+    expect(short.reduce((a, s) => a + s.dur, 0)).toBe(60);
+    expect(long.reduce((a, s) => a + s.dur, 0)).toBe(80);
+  });
+
+  it("ne réduit jamais un segment souple sous 3 minutes", () => {
+    const steps = buildSteps([{ id: "quality", dur: 40 }], "dev", 1, {});
+    steps.filter((s) => !s.rep).forEach((s) => expect(s.dur).toBeGreaterThanOrEqual(3));
   });
 
   it("enchaîne les deux blocs d'un créneau empilé", () => {

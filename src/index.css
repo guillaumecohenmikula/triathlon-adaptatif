@@ -10,3 +10,17 @@ body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Sections repliables des fiches coach : un + / − à la place du triangle natif. */
+details > summary {
+  list-style: none;
+}
+details > summary::-webkit-details-marker {
+  display: none;
+}
+details > summary .fold::after {
+  content: "+";
+}
+details[open] > summary .fold::after {
+  content: "−";
+}

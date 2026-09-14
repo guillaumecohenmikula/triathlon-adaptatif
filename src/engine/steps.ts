@@ -1,6 +1,6 @@
 import type { BlockId } from "../data/blocks";
 import { SEGMENTS } from "../data/segments";
-import type { ExoRole, ModeId, PhaseId, PlacedBlock, Zones } from "../data/types";
+import type { ExoRole, ModeId, PhaseId, PlacedBlock, Repeats, Segment, Zones } from "../data/types";
 import { formatPace, swimPaces } from "../lib/swim";
 import { selectExos } from "./selectExos";
 
@@ -15,6 +15,8 @@ export interface Step {
   load?: string;
   role?: ExoRole;
   zoneFocus?: boolean;
+  /** Série d'intervalles, que le chrono déplie. */
+  rep?: Repeats;
 }
 
 /** Faute de test CSS, on décrit l'intention plutôt que d'inventer une allure. */
@@ -34,6 +36,40 @@ export function withPaces(text: string, css?: number) {
     const paces = swimPaces(css);
     return `${formatPace(paces[key as keyof ReturnType<typeof swimPaces>])}/100m`;
   });
+}
+
+/** Durée d'une série d'intervalles, récupérations comprises, en minutes. */
+export const repeatsMinutes = (r: Repeats) => r.n * r.work + (r.n - 1) * r.rest;
+
+/**
+ * Durée de chaque segment pour une séance de `total` minutes.
+ *
+ * Une série d'intervalles garde sa durée propre. Les autres segments se partagent le reste
+ * au prorata, arrondis à la minute par la méthode du plus grand reste : la somme tombe juste
+ * sur la durée choisie. Un segment souple ne descend pas sous 3 minutes, quitte à dépasser
+ * quand la séance est plus courte que sa série d'intervalles.
+ */
+export function segmentMinutes(segs: Segment[], total: number): number[] {
+  const fixed = segs.map((s) => (s.rep ? repeatsMinutes(s.rep) : 0));
+  const flexible = segs.map((s) => (s.rep ? 0 : s.d));
+  const flexTotal = flexible.reduce((a, v) => a + v, 0);
+  const left = Math.max(0, total - fixed.reduce((a, v) => a + v, 0));
+
+  const raw = flexible.map((d) => (flexTotal === 0 ? 0 : (d / flexTotal) * left));
+  const out = raw.map(Math.floor);
+  let spare = left - out.reduce((a, v) => a + v, 0);
+  raw
+    .map((v, i) => ({ i, frac: v - Math.floor(v) }))
+    .filter(({ i }) => !segs[i].rep)
+    .sort((a, b) => b.frac - a.frac)
+    .forEach(({ i }) => {
+      if (spare > 0) {
+        out[i] += 1;
+        spare -= 1;
+      }
+    });
+
+  return segs.map((s, i) => (s.rep ? fixed[i] : Math.max(3, out[i])));
 }
 
 /**
@@ -87,14 +123,15 @@ export function buildSteps(
 
     const segs = SEGMENTS[b.id];
     if (segs) {
-      const scale = b.dur / segs.reduce((a, s) => a + s.d, 0);
-      segs.forEach((s) =>
+      const minutes = segmentMinutes(segs, b.dur);
+      segs.forEach((s, i) =>
         out.push({
           kind: "seg",
           block: b.id,
           title: s.t,
-          dur: Math.max(3, Math.round((s.d * scale) / 5) * 5),
+          dur: minutes[i],
           text: withPaces(s.x, css),
+          rep: s.rep,
         }),
       );
     }

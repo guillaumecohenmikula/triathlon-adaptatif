@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Stepper } from "../components/Stepper";
 import { BLOCKS, available } from "../data/blocks";
 import type { BlockId } from "../data/blocks";
+import { SESSION_GUIDES } from "../data/sessionGuides";
 import { placeLabel } from "../data/settings";
 import type { Access, Discipline, ModeId, Phase } from "../data/types";
 import { DUR_MAX, DUR_MIN, DUR_STEP, recommended } from "../engine/week";
@@ -88,6 +89,11 @@ export function Pick({ week, day, access, phase, mode, late, already, onAdd, onB
 
         {on && (
           <div className="p-3" style={{ background: "#fff", border: `1px solid ${INK}`, borderTop: "none" }}>
+            {SESSION_GUIDES[id] && (
+              <p className="m-0 mb-3 text-sm" style={{ lineHeight: 1.45 }}>
+                {SESSION_GUIDES[id].goal}
+              </p>
+            )}
             <p className="m-0 mb-2 text-xs" style={{ color: MUTED }}>
               Durée
             </p>

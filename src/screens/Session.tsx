@@ -1,10 +1,17 @@
 import { useMemo, useState } from "react";
+import { Chrono } from "../components/Chrono";
+import { IDLE } from "../components/chronoState";
+import type { ChronoState } from "../components/chronoState";
+import { Fold, Points, SessionGuideView } from "../components/Guide";
 import { SessionStep } from "../components/SessionStep";
 import { Stepper } from "../components/Stepper";
 import { BLOCKS } from "../data/blocks";
 import { DAYS, MODE_GUIDANCE, PROGRESSION, STATES, placeLabel } from "../data/settings";
 import type { ModeId, Phase, PlannedSession, SessionState, Zones } from "../data/types";
+import { LOAD_PRIMER } from "../data/guides";
+import { SESSION_GUIDES } from "../data/sessionGuides";
 import { buildSteps } from "../engine/steps";
+import { timeable } from "../engine/timeline";
 import { DUR_MAX, DUR_MIN, DUR_STEP, minutesOf } from "../engine/week";
 import { dayLabel, humanDuration } from "../lib/date";
 import { DISC, INK, LINE, MUTED, WARN_TX } from "../theme";
@@ -42,7 +49,8 @@ export function Session({
   onRemove,
   onBack,
 }: Props) {
-  const [focus, setFocus] = useState(false);
+  const [focus, setFocus] = useState<"apercu" | "etapes" | "chrono">("apercu");
+  const [chrono, setChrono] = useState<ChronoState>(IDLE);
   const [idx, setIdx] = useState(0);
   const [checks, setChecks] = useState<Record<number, number>>({});
   const [confirming, setConfirming] = useState(false);
@@ -55,7 +63,29 @@ export function Session({
     [session.blocks, phase.id, weekInBlock, zones, css, mode],
   );
 
-  if (focus) {
+  const withChrono = timeable(steps);
+  const guides = session.blocks
+    .map((b) => ({ id: b.id, guide: SESSION_GUIDES[b.id] }))
+    .filter((x) => x.guide);
+
+  if (focus === "chrono") {
+    return (
+      <Chrono
+        steps={steps}
+        color={DISC[first.disc].c}
+        state={chrono}
+        onState={setChrono}
+        onBack={() => setFocus("apercu")}
+        onFinish={() => {
+          if (state !== "fait") onMark("fait");
+          setChrono(IDLE);
+          setFocus("apercu");
+        }}
+      />
+    );
+  }
+
+  if (focus === "etapes") {
     return (
       <SessionStep
         steps={steps}
@@ -63,14 +93,16 @@ export function Session({
         checks={checks}
         onCheck={(i, sets) => setChecks((c) => ({ ...c, [i]: sets }))}
         onMove={setIdx}
-        onBack={() => setFocus(false)}
+        onBack={() => setFocus("apercu")}
         onFinish={() => {
-          onMark("fait");
-          setFocus(false);
+          if (state !== "fait") onMark("fait");
+          setFocus("apercu");
         }}
       />
     );
   }
+
+  const chronoLive = chrono.startedAt !== null;
 
   return (
     <div>
@@ -90,32 +122,47 @@ export function Session({
           {total} min
         </p>
       </div>
-      <p className="m-0 mb-2 text-xs" style={{ color: MUTED }}>
-        {PROGRESSION[weekInBlock]}
+      <p className="m-0 mb-4 text-sm" style={{ color: DISC[first.disc].c }}>
+        {session.blocks.map((b) => BLOCKS[b.id].label).join(" + ")}
       </p>
-      {hasRenfo && (
-        <p className="m-0 mb-4 text-xs" style={{ color: MUTED }}>
-          {MODE_GUIDANCE[mode]}
-        </p>
-      )}
 
       <button
         onClick={() => {
+          if (withChrono) return setFocus("chrono");
           setIdx(0);
-          setFocus(true);
+          setFocus("etapes");
         }}
         className="w-full mb-5 cursor-pointer border-none"
         style={{ height: 52, background: INK, color: "#fff", fontSize: 16 }}
       >
-        Démarrer la séance
+        {withChrono ? (chronoLive ? "Reprendre le chrono" : "Lancer le chrono") : "Démarrer la séance"}
       </button>
 
+      {guides.map(({ id, guide }) => (
+        <SessionGuideView key={id} guide={guide!} color={DISC[BLOCKS[id].disc].c} />
+      ))}
+
+      {hasRenfo && (
+        <div className="mb-4">
+          <div className="p-3 mb-2 text-sm" style={{ background: "#fff", borderLeft: `3px solid ${DISC.renfo.c}`, lineHeight: 1.5 }}>
+            <p className="m-0 mb-2">{PROGRESSION[weekInBlock]}</p>
+            <p className="m-0" style={{ color: MUTED }}>
+              {MODE_GUIDANCE[mode]}
+            </p>
+          </div>
+          <Fold title="Choisir ta charge">
+            <Points items={LOAD_PRIMER} />
+          </Fold>
+        </div>
+      )}
+
+      <p className="m-0 mt-5 mb-2 text-sm font-medium">Déroulé</p>
       {steps.map((s, i) => (
         <button
           key={i}
           onClick={() => {
             setIdx(i);
-            setFocus(true);
+            setFocus("etapes");
           }}
           className="w-full text-left mb-2 p-3 cursor-pointer"
           style={{
@@ -131,7 +178,7 @@ export function Session({
               style={{ color: s.zoneFocus ? DISC[BLOCKS[s.block].disc].c : MUTED }}
             >
               {s.zoneFocus ? "priorisé · " : ""}
-              {s.sets ?? `${s.dur} min`}
+              {s.sets ?? (s.rep ? `${s.rep.n} × ${s.rep.work} min` : `${s.dur} min`)}
             </p>
           </div>
         </button>

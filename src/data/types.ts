@@ -89,11 +89,23 @@ export interface Warmup {
   x: string;
 }
 
+/** Série d'intervalles : `n` fois `work` minutes, séparées de `rest` minutes. */
+export interface Repeats {
+  n: number;
+  work: number;
+  rest: number;
+}
+
 /** Étape d'une séance à durée (course, vélo, natation). */
 export interface Segment {
   t: string;
   d: number;
   x: string;
+  /**
+   * Structure fixe d'intervalles. Un segment qui en porte une garde sa durée quelle que
+   * soit celle de la séance : raccourcir un 4 × 8 min en changerait la nature.
+   */
+  rep?: Repeats;
 }
 
 export interface Phase {
