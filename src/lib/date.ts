@@ -49,15 +49,11 @@ export const weeksBetween = (a: string, b: string) =>
   Math.round((parseISO(b).getTime() - parseISO(a).getTime()) / (7 * 86_400_000));
 
 /**
- * Index du jour à partir duquel une semaine est encore modifiable.
- * Semaine passée : tout est figé. Semaine à venir : rien ne l'est. Semaine en cours : aujourd'hui.
+ * Le jour est-il encore à venir ? Une séance extra se note après coup : on ne la propose
+ * pas sur un jour qui n'est pas arrivé.
  */
-export const frozenUntil = (week: string, now: Date = new Date()) => {
-  const current = mondayKey(now);
-  if (week < current) return 7;
-  if (week > current) return 0;
-  return todayIndex(now);
-};
+export const isFuture = (week: string, day: string, now: Date = new Date()) =>
+  toISO(dateOf(week, day)) > toISO(now);
 
 /** Index du jour courant, lundi = 0. Sert à savoir ce qui appartient au passé. */
 export const todayIndex = (now: Date = new Date()) => (now.getDay() + 6) % 7;

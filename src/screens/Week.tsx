@@ -1,89 +1,94 @@
 import { useState } from "react";
-import { SlotEditor } from "../components/SlotEditor";
 import { WeekPicker } from "../components/WeekPicker";
-import type { BlockId } from "../data/blocks";
 import { BLOCKS } from "../data/blocks";
-import { PROGRESSION, STATES, placeLabel } from "../data/settings";
+import { DAYS, PROGRESSION, STATES, placeLabel } from "../data/settings";
 import type {
   Discipline,
+  ExtraSession,
   Journal,
   Phase,
-  PlaceId,
-  PlacedSession,
-  Slots,
+  PlannedSession,
+  Targets,
 } from "../data/types";
-import { intensityMix } from "../engine/buildWeek";
-import type { Deficits } from "../engine/deficits";
-import { dayLabel, humanDuration, isToday } from "../lib/date";
-import { DISC, INK, LINE, MUTED, WARN_BG, WARN_TX } from "../theme";
+import { intensityMix, minutesOf, plannedByDiscipline } from "../engine/week";
+import { dayLabel, humanDuration, isFuture, isToday } from "../lib/date";
+import { formatDistance } from "../lib/extra";
+import { journalKey } from "../store/db";
+import { ACTIVITY, DISC, INK, LINE, MUTED, WARN_BG, WARN_TX } from "../theme";
 
 interface Props {
   week: string;
   offset: number;
   canGoBack: boolean;
   canGoForward: boolean;
-  /** Index du premier jour encore modifiable. 7 = semaine entièrement passée. */
-  frozen: number;
-  /** La semaine porte des créneaux qui lui sont propres. */
-  ownSlots: boolean;
-  placed: PlacedSession[];
-  dropped: BlockId[];
-  /** Blocs libérés par une annulation qu'aucun créneau restant n'a pu absorber. */
-  orphans: BlockId[];
-  cancelled: string[];
-  slots: Slots;
-  openPlaces: { id: PlaceId; label: string }[];
+  sessions: PlannedSession[];
+  /** Séances extra de la semaine affichée. */
+  extras: ExtraSession[];
   journal: Journal;
   phase: Phase;
   weekInBlock: number;
-  def: Deficits;
-  slotCount: number;
-  onOpen: (day: string) => void;
-  onRestore: (day: string) => void;
-  onToggleDay: (day: string) => void;
-  onSlotChange: (day: string, patch: Partial<{ place: PlaceId; duration: number }>) => void;
+  easyWeek: boolean;
+  /** Disciplines en retard, et sur combien de semaines terminées le calcul porte. */
+  late: Discipline[];
+  lateWeeks: number;
+  targets: Targets;
   onGoWeek: (delta: number) => void;
   onBackToCurrent: () => void;
-  onSaveAsDefault: () => void;
-  onResetSlots: () => void;
+  onOpenSession: (id: string) => void;
+  onProgram: (day: string) => void;
+  onAddExtra: (day: string) => void;
+  onOpenExtra: (id: string) => void;
 }
 
+const ORDER: Discipline[] = ["course", "velo", "natation", "renfo"];
+
+/** La semaine, jour par jour. Chaque jour se remplit à la main, rien n'est posé d'office. */
 export function Week({
   week,
   offset,
   canGoBack,
   canGoForward,
-  frozen,
-  ownSlots,
-  placed,
-  dropped,
-  orphans,
-  cancelled,
-  slots,
-  openPlaces,
+  sessions,
+  extras,
   journal,
   phase,
   weekInBlock,
-  def,
-  slotCount,
-  onOpen,
-  onRestore,
-  onToggleDay,
-  onSlotChange,
+  easyWeek,
+  late,
+  lateWeeks,
+  targets,
   onGoWeek,
   onBackToCurrent,
-  onSaveAsDefault,
-  onResetSlots,
+  onOpenSession,
+  onProgram,
+  onAddExtra,
+  onOpenExtra,
 }: Props) {
-  const [editing, setEditing] = useState(false);
-  const [showInfo, setShowInfo] = useState(false);
+  const [openDay, setOpenDay] = useState<string | null>(null);
+  const [showAdvice, setShowAdvice] = useState(false);
 
-  const past = frozen >= 7;
-  const enough = slotCount >= phase.minSlots;
-  const mix = intensityMix(placed);
-  const fillers = placed.filter((s) => s.filler).length;
-  const volume = placed.reduce((a, s) => a + s.blocks.reduce((x, b) => x + b.dur, 0), 0);
-  const lagging = (Object.keys(def.byDisc) as Discipline[]).filter((d) => (def.byDisc[d] ?? 0) > 0.2);
+  const planned = sessions.reduce((a, s) => a + minutesOf(s), 0);
+  const mix = intensityMix(sessions);
+  const byDisc = plannedByDiscipline(sessions);
+  const targetTotal = Object.values(targets).reduce((a, v) => a + v, 0);
+  const enough = sessions.length >= phase.minSlots;
+  const empty = sessions.length === 0 && extras.length === 0;
+
+  const summary = [
+    sessions.length === 0
+      ? "Aucune séance programmée"
+      : `${sessions.length} séance${sessions.length > 1 ? "s" : ""} programmée${sessions.length > 1 ? "s" : ""}`,
+    planned > 0 ? humanDuration(planned) : null,
+    extras.length > 0 ? `${extras.length} extra` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const add = (day: string) => {
+    // Un jour à venir ne peut recevoir qu'une séance programmée : pas de choix à proposer.
+    if (isFuture(week, day)) return onProgram(day);
+    setOpenDay(openDay === day ? null : day);
+  };
 
   return (
     <div>
@@ -92,169 +97,70 @@ export function Week({
         offset={offset}
         canGoBack={canGoBack}
         canGoForward={canGoForward}
-        onGo={onGoWeek}
+        onGo={(delta) => {
+          setOpenDay(null);
+          onGoWeek(delta);
+        }}
         onBackToCurrent={onBackToCurrent}
       />
 
-      {!past && (
-        <div className="flex justify-end mb-3">
-          <button
-            onClick={() => setEditing((e) => !e)}
-            className="text-xs px-3 py-2 cursor-pointer"
-            style={{
-              border: `1px solid ${editing ? INK : LINE}`,
-              background: editing ? INK : "#fff",
-              color: editing ? "#fff" : INK,
-            }}
-          >
-            {editing ? "Terminé" : "Modifier mes créneaux"}
-          </button>
-        </div>
-      )}
-
-      {editing && (
-        <>
-          <SlotEditor
-            week={week}
-            slots={slots}
-            openPlaces={openPlaces}
-            onToggleDay={onToggleDay}
-            onChange={onSlotChange}
-          />
-          <div className="mb-4">
-            <p className="m-0 mb-2 text-xs" style={{ color: MUTED }}>
-              {ownSlots
-                ? "Ces créneaux ne valent que pour cette semaine."
-                : "Ces créneaux viennent de ton schéma habituel."}
-            </p>
-            {ownSlots && (
-              <div className="flex gap-2">
-                <button
-                  onClick={onSaveAsDefault}
-                  className="flex-1 text-xs p-2 cursor-pointer"
-                  style={{ border: `1px solid ${LINE}`, background: "#fff", color: INK }}
-                >
-                  En faire mon schéma habituel
-                </button>
-                <button
-                  onClick={onResetSlots}
-                  className="flex-1 text-xs p-2 cursor-pointer"
-                  style={{ border: `1px solid ${LINE}`, background: "#fff", color: MUTED }}
-                >
-                  Revenir au schéma habituel
-                </button>
-              </div>
-            )}
-          </div>
-        </>
-      )}
-
-      {!editing && placed.length === 0 && (
-        <p className="text-sm mb-4" style={{ color: MUTED }}>
-          {past
-            ? "Aucune séance n'a été planifiée sur cette semaine."
-            : slotCount === 0
-              ? "Aucun créneau cette semaine. Touche « Modifier mes créneaux » pour en ajouter."
-              : "Plus rien de prévu sur les jours qui restent."}
-        </p>
-      )}
-
-      {!editing &&
-        placed.map((s) => {
-          const st = journal[`${week}|${s.day}`]?.state;
-          const c = DISC[BLOCKS[s.blocks[0].id].disc].c;
-          return (
-            <button
-              key={s.day}
-              onClick={() => onOpen(s.day)}
-              className="w-full text-left mb-2 p-3 cursor-pointer"
-              style={{
-                background: "#fff",
-                border: "none",
-                borderLeft: `3px solid ${c}`,
-                opacity: st === "fait" ? 0.55 : 1,
-              }}
-            >
-              <div className="flex justify-between items-baseline mb-1">
-                <p className="m-0 text-sm font-medium">
-                  {s.day}{" "}
-                  <span style={{ color: MUTED, fontWeight: 400 }}>
-                    {dayLabel(week, s.day)}
-                    {isToday(week, s.day) ? " · aujourd'hui" : ""}
-                  </span>
-                </p>
-                <p className="m-0 text-xs" style={{ color: MUTED }}>
-                  {st ? `${STATES.find((x) => x[0] === st)![1].toLowerCase()} · ` : ""}
-                  {s.blocks.reduce((a, b) => a + b.dur, 0)} min
-                </p>
-              </div>
-              <p className="m-0 text-sm" style={{ color: c }}>
-                {s.blocks.map((b) => BLOCKS[b.id].label).join(" + ")}
-              </p>
-              <p className="m-0 mt-1 text-xs" style={{ color: MUTED }}>
-                {placeLabel(s.place)}
-              </p>
-            </button>
-          );
-        })}
-
-      {!editing && orphans.length > 0 && (
-        <div className="p-3 mb-2 text-sm" style={{ background: WARN_BG, color: WARN_TX }}>
-          Pas de place cette semaine pour{" "}
-          {orphans.map((id) => BLOCKS[id].label.toLowerCase()).join(", ")}. Le volume manquant sera
-          rattrapé la semaine prochaine.
-        </div>
-      )}
-
-      {!editing &&
-        cancelled.map((day) => (
-          <div
-            key={day}
-            className="flex justify-between items-center mb-2 p-3"
-            style={{ border: `1px dashed ${LINE}` }}
-          >
-            <p className="m-0 text-sm" style={{ color: MUTED }}>
-              {day} {dayLabel(week, day)} · annulé
-            </p>
-            {!past && (
-              <button
-                onClick={() => onRestore(day)}
-                className="text-xs px-3 py-2 cursor-pointer"
-                style={{ border: `1px solid ${LINE}`, background: "#fff", color: INK }}
-              >
-                Rétablir
-              </button>
-            )}
-          </div>
-        ))}
-
       <button
-        onClick={() => setShowInfo((v) => !v)}
-        className="w-full text-left mt-3 p-3 cursor-pointer"
+        onClick={() => setShowAdvice((v) => !v)}
+        className="w-full text-left mb-2 p-3 cursor-pointer"
         style={{ background: "transparent", border: `1px solid ${LINE}` }}
       >
-        <p className="m-0 text-xs" style={{ color: enough ? MUTED : WARN_TX }}>
-          {enough
-            ? `${slotCount} créneaux`
-            : `${slotCount} créneau${slotCount > 1 ? "x" : ""}, il en faut ${phase.minSlots}`}
-          {volume > 0 ? ` · ${humanDuration(volume)} prévues` : ""}
-          {" · "}
-          {showInfo ? "masquer le détail" : "voir le détail"}
+        <p className="m-0 text-xs" style={{ color: MUTED }}>
+          {summary} · {showAdvice ? "masquer le conseil" : "voir le conseil"}
         </p>
       </button>
 
-      {showInfo && (
+      {showAdvice && (
         <div
-          className="p-3 mt-2 text-xs"
+          className="p-3 mb-3 text-xs"
           style={{ background: "#fff", border: `1px solid ${LINE}`, color: MUTED }}
         >
+          <p className="m-0 mb-2">
+            <span style={{ color: INK, fontWeight: 500 }}>Phase {phase.label.toLowerCase()}.</span>{" "}
+            {phase.focus} Au moins {phase.minSlots} séances par semaine.
+            {easyWeek ? " Cette semaine est allégée." : ""}
+          </p>
           <p className="m-0 mb-2">{PROGRESSION[weekInBlock]}</p>
 
+          {!enough && sessions.length > 0 && (
+            <p className="m-0 mb-2" style={{ color: WARN_TX }}>
+              {sessions.length} séance{sessions.length > 1 ? "s" : ""} programmée
+              {sessions.length > 1 ? "s" : ""}, la phase en demande au moins {phase.minSlots}.
+            </p>
+          )}
+
+          {late.length > 0 && (
+            <p className="m-0 mb-2">
+              À rattraper : {late.map((d) => DISC[d].label.toLowerCase()).join(", ")}. Sur tes{" "}
+              {lateWeeks > 1 ? `${lateWeeks} dernières semaines` : "dernière semaine"}, leur part du
+              volume est nettement sous ce que prévoit la phase.
+            </p>
+          )}
+
+          {planned > 0 && (
+            <div className="mb-2">
+              <p className="m-0 mb-1">Répartition programmée, comparée à la phase :</p>
+              {ORDER.map((d) => (
+                <div key={d} className="flex justify-between">
+                  <span style={{ color: DISC[d].c }}>{DISC[d].label}</span>
+                  <span>
+                    {Math.round(((byDisc[d] ?? 0) / planned) * 100)} % prévu ·{" "}
+                    {Math.round((targets[d] / targetTotal) * 100)} % dans la phase
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {mix.total > 0 && (
-            <div className="mb-3">
+            <div>
               <p className="m-0 mb-1">
-                Intensité : {mix.part.basse} % facile · {mix.part.seuil} % seuil ·{" "}
-                {mix.part.haute} % dur. La cible est autour de 80 / 5 / 15.
+                Intensité : {mix.part.basse} % facile · {mix.part.seuil} % seuil · {mix.part.haute} %
+                intense. La cible est autour de 80 / 5 / 15.
               </p>
               <div className="flex" style={{ height: 6 }}>
                 {(["basse", "seuil", "haute"] as const).map((z) => (
@@ -269,26 +175,145 @@ export function Week({
               </div>
             </div>
           )}
-
-          {fillers > 0 && (
-            <p className="m-0 mb-2">
-              {fillers} séance{fillers > 1 ? "s" : ""} ajoutée{fillers > 1 ? "s" : ""} pour ne pas
-              laisser de créneau vide. Le plan de la phase était épuisé pour ce lieu, donc l'app a
-              pris une séance facile ailleurs dans le catalogue, ou répété une séance déjà prévue.
-            </p>
-          )}
-
-          {def.weeks > 0 && lagging.length > 0 && (
-            <p className="m-0 mb-2">
-              Compensation : {lagging.map((d) => DISC[d].label.toLowerCase()).join(", ")} en retard
-              sur {def.weeks} semaine{def.weeks > 1 ? "s" : ""}, donc priorisé cette semaine.
-            </p>
-          )}
-          {dropped.length > 0 && (
-            <p className="m-0">Écarté : {dropped.map((id) => BLOCKS[id].label).join(", ")}.</p>
-          )}
         </div>
       )}
+
+      {empty && (
+        <div className="p-3 mb-3 text-sm" style={{ background: WARN_BG, color: WARN_TX }}>
+          Rien de prévu. Touche + sur un jour pour choisir une séance : celles conseillées pour ta
+          phase apparaissent en premier.
+        </div>
+      )}
+
+      {DAYS.map((day) => {
+        const daySessions = sessions.filter((s) => s.day === day);
+        const dayExtras = extras.filter((x) => x.day === day);
+        const today = isToday(week, day);
+        const open = openDay === day;
+
+        return (
+          <div key={day} className="mb-2" style={{ border: `1px solid ${today ? INK : LINE}` }}>
+            <div className="flex items-center justify-between pl-3">
+              <p className="m-0 text-sm font-medium">
+                {day}{" "}
+                <span style={{ color: MUTED, fontWeight: 400 }}>
+                  {dayLabel(week, day)}
+                  {today ? " · aujourd'hui" : ""}
+                </span>
+              </p>
+              <button
+                onClick={() => add(day)}
+                aria-label={open ? `Fermer ${day}` : `Ajouter ${day}`}
+                className="cursor-pointer"
+                style={{
+                  width: 52,
+                  height: 44,
+                  border: "none",
+                  borderLeft: `1px solid ${LINE}`,
+                  background: "transparent",
+                  color: INK,
+                  fontSize: 22,
+                }}
+              >
+                {open ? "×" : "+"}
+              </button>
+            </div>
+
+            {open && (
+              <div className="flex gap-2 px-2 pb-2">
+                <button
+                  onClick={() => {
+                    setOpenDay(null);
+                    onProgram(day);
+                  }}
+                  className="flex-1 text-sm cursor-pointer border-none"
+                  style={{ height: 44, background: INK, color: "#fff" }}
+                >
+                  Programmer
+                </button>
+                <button
+                  onClick={() => {
+                    setOpenDay(null);
+                    onAddExtra(day);
+                  }}
+                  className="flex-1 text-sm cursor-pointer"
+                  style={{ height: 44, border: `1px solid ${INK}`, background: "#fff", color: INK }}
+                >
+                  Noter une séance faite
+                </button>
+              </div>
+            )}
+
+            {(daySessions.length > 0 || dayExtras.length > 0) && (
+              <div className="px-2 pb-2">
+                {daySessions.map((s) => {
+                  const st = journal[journalKey(week, s.id)]?.state;
+                  const first = BLOCKS[s.blocks[0].id];
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => onOpenSession(s.id)}
+                      className="w-full text-left mb-1 p-3 cursor-pointer"
+                      style={{
+                        background: "#fff",
+                        border: "none",
+                        borderLeft: `3px solid ${DISC[first.disc].c}`,
+                        opacity: st === "fait" ? 0.6 : 1,
+                      }}
+                    >
+                      <div className="flex justify-between items-baseline gap-2">
+                        <p className="m-0 text-sm" style={{ color: DISC[first.disc].c }}>
+                          {s.blocks.map((b) => BLOCKS[b.id].label).join(" + ")}
+                        </p>
+                        <p className="m-0 text-xs whitespace-nowrap" style={{ color: MUTED }}>
+                          {st ? `${STATES.find((x) => x[0] === st)![1].toLowerCase()} · ` : ""}
+                          {minutesOf(s)} min
+                        </p>
+                      </div>
+                      <p className="m-0 mt-1 text-xs" style={{ color: MUTED }}>
+                        {placeLabel(first.place)}
+                      </p>
+                    </button>
+                  );
+                })}
+
+                {dayExtras.map((x) => (
+                  <button
+                    key={x.id}
+                    onClick={() => onOpenExtra(x.id)}
+                    className="w-full text-left mb-1 p-3 cursor-pointer"
+                    style={{
+                      background: "#fff",
+                      border: "none",
+                      borderLeft: `3px solid ${ACTIVITY[x.activity].c}`,
+                    }}
+                  >
+                    <div className="flex justify-between items-baseline gap-2">
+                      <p className="m-0 text-sm" style={{ color: ACTIVITY[x.activity].c }}>
+                        {x.activity === "autre"
+                          ? (x.label ?? ACTIVITY.autre.label)
+                          : `${ACTIVITY[x.activity].label}${x.label ? ` · ${x.label}` : ""}`}
+                      </p>
+                      <p className="m-0 text-xs whitespace-nowrap" style={{ color: MUTED }}>
+                        extra · fait
+                      </p>
+                    </div>
+                    <p className="m-0 mt-1 text-xs" style={{ color: MUTED }}>
+                      {[
+                        `${x.dur} min`,
+                        x.km !== undefined ? formatDistance(x.activity, x.km) : null,
+                        x.rpe !== undefined ? `effort ${x.rpe}/10` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

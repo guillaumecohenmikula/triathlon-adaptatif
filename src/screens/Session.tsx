@@ -1,14 +1,16 @@
 import { useMemo, useState } from "react";
 import { SessionStep } from "../components/SessionStep";
+import { Stepper } from "../components/Stepper";
 import { BLOCKS } from "../data/blocks";
-import { MODE_GUIDANCE, PROGRESSION, STATES, placeLabel } from "../data/settings";
-import type { ModeId, Phase, PlacedSession, SessionState, Zones } from "../data/types";
+import { DAYS, MODE_GUIDANCE, PROGRESSION, STATES, placeLabel } from "../data/settings";
+import type { ModeId, Phase, PlannedSession, SessionState, Zones } from "../data/types";
 import { buildSteps } from "../engine/steps";
-import { dayLabel } from "../lib/date";
-import { DISC, INK, LINE, MUTED } from "../theme";
+import { DUR_MAX, DUR_MIN, DUR_STEP, minutesOf } from "../engine/week";
+import { dayLabel, humanDuration } from "../lib/date";
+import { DISC, INK, LINE, MUTED, WARN_TX } from "../theme";
 
 interface Props {
-  session: PlacedSession;
+  session: PlannedSession;
   phase: Phase;
   weekInBlock: number;
   zones: Zones;
@@ -18,11 +20,10 @@ interface Props {
   /** Lundi ISO de la semaine affichée, pour dater la séance. */
   week: string;
   state?: SessionState;
-  /** Faux sur un jour passé : on peut encore noter la séance, plus l'annuler. */
-  editable: boolean;
   onMark: (state: SessionState) => void;
-  /** « Je ne peux pas ce jour » : annule le créneau sans compter d'échec. */
-  onCancel: () => void;
+  onMove: (day: string) => void;
+  onResize: (dur: number) => void;
+  onRemove: () => void;
   onBack: () => void;
 }
 
@@ -35,16 +36,19 @@ export function Session({
   css,
   mode,
   state,
-  editable,
   onMark,
-  onCancel,
+  onMove,
+  onResize,
+  onRemove,
   onBack,
 }: Props) {
   const [focus, setFocus] = useState(false);
   const [idx, setIdx] = useState(0);
   const [checks, setChecks] = useState<Record<number, number>>({});
+  const [confirming, setConfirming] = useState(false);
 
-  const total = session.blocks.reduce((a, b) => a + b.dur, 0);
+  const total = minutesOf(session);
+  const first = BLOCKS[session.blocks[0].id];
   const hasRenfo = session.blocks.some((b) => BLOCKS[b.id].disc === "renfo");
   const steps = useMemo(
     () => buildSteps(session.blocks, phase.id, weekInBlock, zones, css, mode),
@@ -80,7 +84,7 @@ export function Session({
 
       <div className="flex justify-between items-baseline mb-1">
         <p className="m-0 text-base font-medium">
-          {session.day} {dayLabel(week, session.day)} · {placeLabel(session.place).toLowerCase()}
+          {session.day} {dayLabel(week, session.day)} · {placeLabel(first.place).toLowerCase()}
         </p>
         <p className="m-0 text-sm" style={{ color: MUTED }}>
           {total} min
@@ -153,22 +157,74 @@ export function Session({
         ))}
       </div>
 
-      {/* Volontairement séparé du bilan : un empêchement n'est pas un échec. */}
-      {editable && (
       <div className="mt-6 pt-4" style={{ borderTop: `1px solid ${LINE}` }}>
-        <button
-          onClick={onCancel}
-          className="w-full cursor-pointer"
-          style={{ height: 44, border: `1px solid ${LINE}`, background: "transparent", color: INK, fontSize: 14 }}
-        >
-          Je ne peux pas ce jour
-        </button>
-        <p className="m-0 mt-2 text-xs" style={{ color: MUTED }}>
-          Le créneau saute et la séance repart sur un autre jour libre si c'est possible.
-          Ça ne compte pas comme une séance ratée.
+        <p className="m-0 mb-2 text-sm font-medium">Organiser</p>
+
+        <p className="m-0 mb-2 text-xs" style={{ color: MUTED }}>
+          Jour
         </p>
+        <div className="grid gap-1 mb-4" style={{ gridTemplateColumns: "repeat(7, 1fr)" }}>
+          {DAYS.map((d) => {
+            const on = d === session.day;
+            return (
+              <button
+                key={d}
+                onClick={() => !on && onMove(d)}
+                aria-label={`Déplacer à ${d}`}
+                className="cursor-pointer p-0"
+                style={{
+                  height: 40,
+                  border: `1px solid ${on ? INK : LINE}`,
+                  background: on ? INK : "#fff",
+                  color: on ? "#fff" : INK,
+                  fontSize: 13,
+                }}
+              >
+                {d.slice(0, 3)}
+              </button>
+            );
+          })}
+        </div>
+
+        {session.blocks.length === 1 && (
+          <div className="mb-4">
+            <p className="m-0 mb-2 text-xs" style={{ color: MUTED }}>
+              Durée
+            </p>
+            <Stepper
+              value={total}
+              onChange={onResize}
+              min={DUR_MIN}
+              max={DUR_MAX}
+              step={DUR_STEP}
+              format={humanDuration}
+              label="Durée"
+            />
+            <p className="m-0 mt-2 text-xs" style={{ color: MUTED }}>
+              Conseillé : {first.min} à {first.max} min. Le contenu de la séance suit la durée.
+            </p>
+          </div>
+        )}
+
+        <button
+          onClick={() => (confirming ? onRemove() : setConfirming(true))}
+          className="w-full cursor-pointer"
+          style={{
+            height: 44,
+            border: `1px solid ${confirming ? WARN_TX : LINE}`,
+            background: "transparent",
+            color: confirming ? WARN_TX : INK,
+            fontSize: 14,
+          }}
+        >
+          {confirming ? "Confirmer le retrait" : "Retirer de la semaine"}
+        </button>
+        {confirming && state && (
+          <p className="m-0 mt-2 text-xs" style={{ color: WARN_TX }}>
+            Le bilan de cette séance quittera aussi l'historique.
+          </p>
+        )}
       </div>
-      )}
     </div>
   );
 }

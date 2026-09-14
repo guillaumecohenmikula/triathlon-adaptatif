@@ -6,11 +6,16 @@ import { supabase } from "./client";
 const TABLE = "tri_sync";
 
 /** Où chaque famille d'enregistrements vit en local, et comment on l'identifie. */
-const SOURCES: { kind: SyncKind; table: "settings" | "journal" | "weeks" | "weights"; keyOf: (r: LocalRow) => string }[] = [
+const SOURCES: {
+  kind: SyncKind;
+  table: "settings" | "journal" | "weeks" | "weights" | "extras";
+  keyOf: (r: LocalRow) => string;
+}[] = [
   { kind: "settings", table: "settings", keyOf: (r) => String(r.key) },
   { kind: "journal", table: "journal", keyOf: (r) => String(r.key) },
   { kind: "week", table: "weeks", keyOf: (r) => String(r.week) },
   { kind: "weight", table: "weights", keyOf: (r) => String(r.week) },
+  { kind: "extra", table: "extras", keyOf: (r) => String(r.id) },
 ];
 
 const byKind = Object.fromEntries(SOURCES.map((s) => [s.kind, s])) as Record<

@@ -1,19 +1,14 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo } from "react";
-import type { Journal, PlacedBlock, PlaceId, SessionState } from "../data/types";
+import { BLOCKS } from "../data/blocks";
+import type { Journal, PlannedSession, SessionState } from "../data/types";
 import { db, journalKey, stamp } from "./db";
 import { track } from "./writes";
 
 export interface JournalStore {
   journal: Journal;
   /** Repose sur un basculement : re-marquer le même état efface l'entrée. */
-  mark: (
-    week: string,
-    day: string,
-    place: PlaceId,
-    blocks: PlacedBlock[],
-    state: SessionState,
-  ) => void;
+  mark: (week: string, session: PlannedSession, state: SessionState) => void;
 }
 
 export function useJournal(): JournalStore {
@@ -25,21 +20,17 @@ export function useJournal(): JournalStore {
         rows
           .filter((r) => !r.deleted)
           .map((r) => [
-          r.key,
+            r.key,
             { week: r.week, day: r.day, place: r.place, blocks: r.blocks, state: r.state },
           ]),
       ),
     [rows],
   );
 
-  const mark = (
-    week: string,
-    day: string,
-    place: PlaceId,
-    blocks: PlacedBlock[],
-    state: SessionState,
-  ) => {
-    const key = journalKey(week, day);
+  const mark = (week: string, session: PlannedSession, state: SessionState) => {
+    const key = journalKey(week, session.id);
+    const { day, blocks } = session;
+    const place = BLOCKS[blocks[0].id].place;
     track("Enregistrement du bilan", () =>
       db.transaction("rw", db.journal, async () => {
         const existing = await db.journal.get(key);

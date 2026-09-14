@@ -107,31 +107,45 @@ export interface Phase {
   focus: string;
 }
 
-/** Les créneaux déclarés, indexés par jour de la semaine. */
-export type Slots = Record<string, { place: PlaceId; duration: number }>;
-
-/** Un créneau hebdomadaire déclaré par l'utilisateur. */
-export interface Slot {
-  day: string;
-  place: PlaceId;
-  duration: number;
-}
-
-/** Un bloc placé dans un créneau, avec sa durée retenue. */
+/** Un bloc posé dans une séance, avec sa durée retenue. */
 export interface PlacedBlock {
   id: BlockId;
   dur: number;
 }
 
-export interface PlacedSession extends Slot {
-  blocks: PlacedBlock[];
+/** Une séance choisie par l'utilisateur pour un jour de la semaine. */
+export interface PlannedSession {
   /**
-   * Séance de repli : une répétition posée faute de bloc neuf pour ce créneau.
-   * Elle cède la place dès qu'une séance du plan a besoin du créneau.
+   * Identifiant stable, qui sert aussi de clé au bilan. Les séances posées par l'ancien
+   * moteur automatique portent le nom de leur jour : leur bilan reste ainsi rattaché.
    */
-  filler?: boolean;
+  id: string;
+  day: string;
+  blocks: PlacedBlock[];
 }
 
+/** Ce qu'une séance extra peut être : une des quatre disciplines, ou autre chose. */
+export type ActivityId = Discipline | "autre";
+
+/** Une séance faite hors programme, notée après coup. */
+export interface ExtraSession {
+  id: string;
+  /** Lundi ISO de la semaine. */
+  week: string;
+  day: string;
+  activity: ActivityId;
+  /** Nom libre : marche, foot, vélotaf. Surtout utile pour « autre ». */
+  label?: string;
+  /** Minutes. */
+  dur: number;
+  /** Kilomètres. La natation se saisit en mètres mais se range en kilomètres. */
+  km?: number;
+  /** Effort ressenti, de 1 à 10. */
+  rpe?: number;
+  note?: string;
+}
+
+/** Le bilan d'une séance du programme, adressé par `semaine|identifiant de séance`. */
 export interface JournalEntry {
   /** Lundi ISO de la semaine, ex. "2026-09-01". */
   week: string;

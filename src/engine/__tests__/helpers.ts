@@ -1,6 +1,5 @@
 import { PHASES } from "../../data/phases";
 import type { Access, Phase, PhaseId } from "../../data/types";
-import type { Deficits } from "../deficits";
 
 export const phase = (id: PhaseId): Phase => {
   const p = PHASES.find((x) => x.id === id);
@@ -20,5 +19,3 @@ export const fullAccess = (over: Partial<Access> = {}): Access => ({
   tapis: true,
   ...over,
 });
-
-export const noDeficit: Deficits = { weeks: 0, byDisc: {} };

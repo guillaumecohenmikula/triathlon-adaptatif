@@ -1,6 +1,6 @@
 import type { Segment } from "./types";
 
-/* Étapes des séances à durée. Les durées sont mises à l'échelle du créneau réel. */
+/* Étapes des séances à durée. Les durées sont mises à l'échelle de la durée choisie. */
 const RAW = {
   longRun: [
     { t: "Échauffement", d: 10, x: "Trot très souple, 3 accélérations de 20 s sur la fin" },

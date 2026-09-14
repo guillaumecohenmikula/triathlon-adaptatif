@@ -1,45 +1,86 @@
 import { BLOCKS } from "../data/blocks";
-import { STATES, WEIGHT } from "../data/settings";
-import type { Discipline, Journal, JournalEntry } from "../data/types";
+import { DAYS, STATES, WEIGHT } from "../data/settings";
+import type { ActivityId, ExtraSession, Journal } from "../data/types";
 import { WeightTracker } from "../components/WeightTracker";
 import { dayLabel, frDate, humanDuration } from "../lib/date";
+import { formatDistance } from "../lib/extra";
 import type { WeightRow } from "../store/db";
-import { DISC, INK, LINE, MUTED } from "../theme";
+import { ACTIVITY, INK, LINE, MUTED } from "../theme";
+
+interface Line {
+  key: string;
+  day: string;
+  text: string;
+  muted: boolean;
+}
 
 interface WeekSummary {
   week: string;
-  entries: JournalEntry[];
-  byDisc: Partial<Record<Discipline, number>>;
+  lines: Line[];
+  byActivity: Partial<Record<ActivityId, number>>;
   total: number;
+  /** Séances du programme faites, même partiellement, sur celles qui ont un bilan. */
   done: number;
+  marked: number;
+  extras: number;
 }
 
-/** Agrège le journal par semaine, la plus récente en premier. */
-export function summarize(journal: Journal): WeekSummary[] {
+/** Agrège bilans et séances extra par semaine, la plus récente en premier. */
+export function summarize(journal: Journal, extras: ExtraSession[]): WeekSummary[] {
   const byWeek: Record<string, WeekSummary> = {};
-  Object.values(journal).forEach((e) => {
-    const w = (byWeek[e.week] ??= { week: e.week, entries: [], byDisc: {}, total: 0, done: 0 });
-    w.entries.push(e);
+  const of = (week: string) =>
+    (byWeek[week] ??= { week, lines: [], byActivity: {}, total: 0, done: 0, marked: 0, extras: 0 });
+  const count = (w: WeekSummary, a: ActivityId, minutes: number) => {
+    w.byActivity[a] = (w.byActivity[a] ?? 0) + minutes;
+    w.total += minutes;
+  };
+
+  Object.entries(journal).forEach(([key, e]) => {
+    const w = of(e.week);
+    w.marked += 1;
     if (e.state !== "rate") w.done += 1;
-    e.blocks.forEach((b) => {
-      const m = b.dur * (WEIGHT[e.state] ?? 0);
-      const d = BLOCKS[b.id].disc;
-      w.byDisc[d] = (w.byDisc[d] ?? 0) + m;
-      w.total += m;
+    e.blocks.forEach((b) => count(w, BLOCKS[b.id].disc, b.dur * (WEIGHT[e.state] ?? 0)));
+    w.lines.push({
+      key,
+      day: e.day,
+      text: `${e.blocks.map((b) => BLOCKS[b.id].label).join(" + ")} · ${STATES.find((s) => s[0] === e.state)![1].toLowerCase()}`,
+      muted: e.state === "rate",
     });
   });
-  return Object.values(byWeek).sort((a, b) => (a.week < b.week ? 1 : -1));
+
+  extras.forEach((x) => {
+    const w = of(x.week);
+    w.extras += 1;
+    count(w, x.activity, x.dur);
+    const name =
+      x.activity === "autre"
+        ? (x.label ?? ACTIVITY.autre.label)
+        : `${ACTIVITY[x.activity].label}${x.label ? ` (${x.label})` : ""}`;
+    const details = [
+      `${x.dur} min`,
+      x.km !== undefined ? formatDistance(x.activity, x.km) : null,
+      x.rpe !== undefined ? `effort ${x.rpe}/10` : null,
+    ]
+      .filter(Boolean)
+      .join(", ");
+    w.lines.push({ key: x.id, day: x.day, text: `${name}, ${details} · extra`, muted: false });
+  });
+
+  const weeks = Object.values(byWeek);
+  weeks.forEach((w) => w.lines.sort((a, b) => DAYS.indexOf(a.day) - DAYS.indexOf(b.day)));
+  return weeks.sort((a, b) => (a.week < b.week ? 1 : -1));
 }
 
 interface Props {
   journal: Journal;
+  extras: ExtraSession[];
   week: string;
   weights: WeightRow[];
   onRecordWeight: (week: string, kg: number) => void;
 }
 
-export function History({ journal, week, weights, onRecordWeight }: Props) {
-  const history = summarize(journal);
+export function History({ journal, extras, week, weights, onRecordWeight }: Props) {
+  const history = summarize(journal, extras);
 
   return (
     <div>
@@ -47,7 +88,8 @@ export function History({ journal, week, weights, onRecordWeight }: Props) {
 
       {history.length === 0 && (
         <p className="text-sm" style={{ color: MUTED }}>
-          Rien pour l'instant. Marque tes séances et elles s'accumulent ici.
+          Rien pour l'instant. Fais le bilan de tes séances ou note une séance extra, elles
+          s'accumulent ici.
         </p>
       )}
 
@@ -59,38 +101,41 @@ export function History({ journal, week, weights, onRecordWeight }: Props) {
               {w.week === week ? " · en cours" : ""}
             </p>
             <p className="m-0 text-xs" style={{ color: MUTED }}>
-              {w.done}/{w.entries.length} séances · {humanDuration(Math.round(w.total))}
+              {[
+                w.marked > 0 ? `${w.done}/${w.marked} du programme` : null,
+                w.extras > 0 ? `${w.extras} extra` : null,
+                humanDuration(Math.round(w.total)),
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             </p>
           </div>
 
           {w.total > 0 && (
             <div className="flex mb-2" style={{ height: 8 }}>
-              {(Object.keys(w.byDisc) as Discipline[]).map((d) => (
+              {(Object.keys(w.byActivity) as ActivityId[]).map((a) => (
                 <div
-                  key={d}
-                  style={{ width: `${((w.byDisc[d] ?? 0) / w.total) * 100}%`, background: DISC[d].c }}
+                  key={a}
+                  style={{
+                    width: `${((w.byActivity[a] ?? 0) / w.total) * 100}%`,
+                    background: ACTIVITY[a].c,
+                  }}
                 />
               ))}
             </div>
           )}
 
           <div className="flex flex-wrap gap-2 mb-2">
-            {(Object.keys(w.byDisc) as Discipline[]).map((d) => (
-              <span key={d} className="text-xs" style={{ color: DISC[d].c }}>
-                {DISC[d].label} {Math.round(w.byDisc[d] ?? 0)} min
+            {(Object.keys(w.byActivity) as ActivityId[]).map((a) => (
+              <span key={a} className="text-xs" style={{ color: ACTIVITY[a].c }}>
+                {ACTIVITY[a].label} {Math.round(w.byActivity[a] ?? 0)} min
               </span>
             ))}
           </div>
 
-          {w.entries.map((e) => (
-            <p
-              key={e.day}
-              className="m-0 text-xs"
-              style={{ color: e.state === "rate" ? MUTED : INK }}
-            >
-              {e.day} {dayLabel(w.week, e.day)} ·{" "}
-              {e.blocks.map((b) => BLOCKS[b.id].label).join(" + ")} ·{" "}
-              {STATES.find((s) => s[0] === e.state)![1].toLowerCase()}
+          {w.lines.map((l) => (
+            <p key={l.key} className="m-0 text-xs" style={{ color: l.muted ? MUTED : INK }}>
+              {l.day} {dayLabel(w.week, l.day)} · {l.text}
             </p>
           ))}
         </div>

@@ -38,7 +38,7 @@ export function withPaces(text: string, css?: number) {
 
 /**
  * Déroulé complet d'une séance, étape par étape. Un bloc de renfo donne un échauffement
- * puis ses exercices ; un bloc à durée donne ses segments, mis à l'échelle du créneau réel.
+ * puis ses exercices ; un bloc à durée donne ses segments, mis à l'échelle de la durée choisie.
  */
 export function buildSteps(
   blocks: PlacedBlock[],

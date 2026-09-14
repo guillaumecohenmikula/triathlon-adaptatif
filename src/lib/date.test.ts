@@ -3,8 +3,8 @@ import {
   dateOf,
   dayLabel,
   frDate,
-  frozenUntil,
   humanDuration,
+  isFuture,
   isToday,
   mondayKey,
   shiftWeek,
@@ -87,21 +87,21 @@ describe("navigation entre semaines", () => {
   });
 });
 
-describe("ce qui est figé selon la semaine consultée", () => {
-  const lundi = new Date(2026, 8, 7); // 7 septembre 2026, un lundi
-  const jeudi = new Date(2026, 8, 10);
+describe("jours à venir", () => {
+  const jeudi = new Date(2026, 8, 10, 7, 30); // jeudi 10 septembre 2026, tôt le matin
 
-  it("fige toute une semaine passée", () => {
-    expect(frozenUntil("2026-08-31", jeudi)).toBe(7);
+  it("tient aujourd'hui pour arrivé, quelle que soit l'heure", () => {
+    expect(isFuture("2026-09-07", "Jeudi", jeudi)).toBe(false);
   });
 
-  it("ne fige rien dans une semaine à venir", () => {
-    expect(frozenUntil("2026-09-14", jeudi)).toBe(0);
+  it("distingue la veille et le lendemain", () => {
+    expect(isFuture("2026-09-07", "Mercredi", jeudi)).toBe(false);
+    expect(isFuture("2026-09-07", "Vendredi", jeudi)).toBe(true);
   });
 
-  it("fige la semaine en cours jusqu'à aujourd'hui", () => {
-    expect(frozenUntil("2026-09-07", jeudi)).toBe(3);
-    expect(frozenUntil("2026-09-07", lundi)).toBe(0);
+  it("met toute une semaine passée dans le passé, toute une semaine suivante dans l'avenir", () => {
+    expect(isFuture("2026-08-31", "Dimanche", jeudi)).toBe(false);
+    expect(isFuture("2026-09-14", "Lundi", jeudi)).toBe(true);
   });
 });
 

@@ -2,7 +2,7 @@ import { BLOCKS, available } from "../data/blocks";
 import { PHASES } from "../data/phases";
 import { placeLabel } from "../data/settings";
 import type { Access, Discipline, ModeId, Phase } from "../data/types";
-import { planFor } from "../engine/buildWeek";
+import { planFor } from "../engine/week";
 import { DISC, INK, LINE, MUTED } from "../theme";
 
 interface Props {
@@ -34,7 +34,7 @@ export function Periods({ phase, mode, factor, access, onBack }: Props) {
           <div className="flex justify-between mb-1">
             <p className="m-0 text-sm font-medium">{p.label}</p>
             <p className="m-0 text-xs" style={{ color: MUTED }}>
-              {p.minSlots} créneaux mini
+              {p.minSlots} séances par semaine au minimum
             </p>
           </div>
           <p className="m-0 mb-2 text-xs" style={{ color: MUTED }}>

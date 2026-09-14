@@ -7,9 +7,9 @@
 -- sans avoir à comparer les contenus.
 create table if not exists tri_sync (
   user_id    uuid        not null references auth.users on delete cascade,
-  -- 'settings' | 'journal' | 'week' | 'weight'
+  -- 'settings' | 'journal' | 'week' | 'weight' | 'extra'
   kind       text        not null,
-  -- l'identifiant local : 'app', '2026-09-07|Mardi', '2026-09-07', ...
+  -- l'identifiant local : 'app', '2026-09-07|<id de séance>', '2026-09-07', ...
   key        text        not null,
   payload    jsonb       not null,
   -- pierre tombale : une suppression doit se propager aux autres appareils

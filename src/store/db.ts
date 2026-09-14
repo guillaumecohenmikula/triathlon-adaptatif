@@ -2,15 +2,13 @@ import Dexie from "dexie";
 import type { Table } from "dexie";
 import type {
   Access,
+  ExtraSession,
   GoalId,
   JournalEntry,
   ModeId,
-  Slots,
   Zones,
 } from "../data/types";
-import type { StoredWeek } from "../engine/replan";
-
-export type { Slots };
+import type { StoredWeek } from "../engine/week";
 
 /** Résultat du test CSS : les deux temps en secondes, et quand il a été fait. */
 export interface SwimTest {
@@ -25,7 +23,6 @@ export interface Settings {
   zones: Zones;
   raceDate: string;
   access: Access;
-  slots: Slots;
   /** Absent tant que le test CSS n'a pas été fait. */
   swimTest?: SwimTest;
 }
@@ -44,13 +41,16 @@ export interface SettingsRow extends Settings, Synced {
   key: "app";
 }
 
-/** Une entrée de journal, adressée par `semaine|jour`. */
+/** Une entrée de journal, adressée par `semaine|identifiant de séance`. */
 export interface JournalRow extends JournalEntry, Synced {
   key: string;
 }
 
 /** La semaine figée, adressée par son lundi ISO. */
 export type WeekRow = StoredWeek & Synced;
+
+/** Une séance faite hors programme, adressée par son identifiant. */
+export type ExtraRow = ExtraSession & Synced;
 
 /** Une pesée, une par semaine, adressée par le lundi ISO. */
 export interface WeightRow extends Synced {
@@ -79,11 +79,6 @@ export const DEFAULTS: Settings = {
     homeTrainer: false,
     tapis: false,
   },
-  slots: {
-    Mardi: { place: "salle", duration: 90 },
-    Jeudi: { place: "exterieur", duration: 60 },
-    Samedi: { place: "exterieur", duration: 90 },
-  },
 };
 
 /* Patron officiel Dexie en TypeScript : on n'étend pas la classe, sinon les champs
@@ -93,6 +88,7 @@ export const db = new Dexie("triathlon") as Dexie & {
   journal: Table<JournalRow, string>;
   weeks: Table<WeekRow, string>;
   weights: Table<WeightRow, string>;
+  extras: Table<ExtraRow, string>;
   meta: Table<MetaRow, string>;
 };
 
@@ -136,7 +132,23 @@ db.version(4)
     }
   });
 
+/* v5 : la semaine se choisit à la main et les séances extra ont leur table.
+   Le repère de réception repart de zéro : un appareil resté sur l'ancienne version a pu
+   recevoir des séances extra sans savoir les ranger, tout en avançant son repère. */
+db.version(5)
+  .stores({
+    settings: "key, updatedAt",
+    journal: "key, week, updatedAt",
+    weeks: "week, updatedAt",
+    weights: "week, updatedAt",
+    extras: "id, week, updatedAt",
+    meta: "key",
+  })
+  .upgrade(async (tx) => {
+    await tx.table("meta").put({ key: "lastPulledAt", value: 0 });
+  });
+
 /** Horodate un enregistrement au moment de l'écrire. */
 export const stamp = <T,>(row: T): T & Synced => ({ ...row, updatedAt: Date.now() });
 
-export const journalKey = (week: string, day: string) => `${week}|${day}`;
+export const journalKey = (week: string, sessionId: string) => `${week}|${sessionId}`;

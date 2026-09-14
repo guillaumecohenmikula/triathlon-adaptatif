@@ -1,4 +1,4 @@
-import type { Discipline } from "./data/types";
+import type { ActivityId, Discipline } from "./data/types";
 
 export const INK = "#12202B";
 export const PAPER = "#EDEFF1";
@@ -12,4 +12,10 @@ export const DISC: Record<Discipline, { c: string; label: string }> = {
   velo: { c: "#1D6FA5", label: "Vélo" },
   natation: { c: "#0F7A6B", label: "Natation" },
   renfo: { c: "#5C4B8A", label: "Renfo" },
+};
+
+/** Les disciplines, plus les activités hors triathlon notées en séance extra. */
+export const ACTIVITY: Record<ActivityId, { c: string; label: string }> = {
+  ...DISC,
+  autre: { c: "#7A7F85", label: "Autre activité" },
 };
