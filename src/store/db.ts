@@ -6,9 +6,13 @@ import type {
   GoalId,
   JournalEntry,
   ModeId,
+  Movement,
+  Session,
+  Template,
   Zones,
 } from "../data/types";
-import type { StoredWeek } from "../engine/week";
+import { migrate } from "../engine/migrate";
+import type { LegacyExtra, LegacyJournal, LegacyWeek } from "../engine/migrate";
 
 /** Résultat du test CSS : les deux temps en secondes, et quand il a été fait. */
 export interface SwimTest {
@@ -46,8 +50,8 @@ export interface JournalRow extends JournalEntry, Synced {
   key: string;
 }
 
-/** La semaine figée, adressée par son lundi ISO. */
-export type WeekRow = StoredWeek & Synced;
+/** Une semaine de l'ancien modèle, conservée telle quelle depuis la conversion. */
+export type WeekRow = LegacyWeek & Synced;
 
 /** Une séance faite hors programme, adressée par son identifiant. */
 export type ExtraRow = ExtraSession & Synced;
@@ -57,6 +61,15 @@ export interface WeightRow extends Synced {
   week: string;
   kg: number;
 }
+
+/** Une séance du carnet. */
+export type SessionRow = Session & Synced;
+
+/** Un modèle de séance : ceux fournis ne sont ici que s'ils ont été modifiés. */
+export type TemplateRow = Template & Synced;
+
+/** Un mouvement ajouté par l'utilisateur, ou un mouvement fourni qu'il a modifié. */
+export type MovementRow = Movement & Synced;
 
 /** Petites valeurs de service : date de dernière synchronisation, identifiant d'appareil. */
 export interface MetaRow {
@@ -89,6 +102,9 @@ export const db = new Dexie("triathlon") as Dexie & {
   weeks: Table<WeekRow, string>;
   weights: Table<WeightRow, string>;
   extras: Table<ExtraRow, string>;
+  sessions: Table<SessionRow, string>;
+  templates: Table<TemplateRow, string>;
+  movements: Table<MovementRow, string>;
   meta: Table<MetaRow, string>;
 };
 
@@ -145,6 +161,36 @@ db.version(5)
     meta: "key",
   })
   .upgrade(async (tx) => {
+    await tx.table("meta").put({ key: "lastPulledAt", value: 0 });
+  });
+
+/* v6 : l'app devient un carnet. Les séances, les modèles et les mouvements remplacent le
+   journal, les semaines et les séances extra, qui restent en base sans être lus : on ne
+   jette pas l'historique d'un utilisateur au moment d'une conversion.
+
+   La conversion produit des identifiants déterministes, pour que deux appareils qui
+   migrent chacun de leur côté tombent sur les mêmes séances au lieu de les dupliquer. */
+db.version(6)
+  .stores({
+    settings: "key, updatedAt",
+    journal: "key, week, updatedAt",
+    weeks: "week, updatedAt",
+    weights: "week, updatedAt",
+    extras: "id, week, updatedAt",
+    sessions: "id, week, updatedAt",
+    templates: "id, updatedAt",
+    movements: "id, updatedAt",
+    meta: "key",
+  })
+  .upgrade(async (tx) => {
+    const [journal, weeks, extras] = await Promise.all([
+      tx.table("journal").toArray() as Promise<LegacyJournal[]>,
+      tx.table("weeks").toArray() as Promise<LegacyWeek[]>,
+      tx.table("extras").toArray() as Promise<LegacyExtra[]>,
+    ]);
+    const now = Date.now();
+    const sessions = migrate(journal, weeks, extras).map((s) => ({ ...s, updatedAt: now }));
+    if (sessions.length > 0) await tx.table("sessions").bulkPut(sessions);
     await tx.table("meta").put({ key: "lastPulledAt", value: 0 });
   });
 

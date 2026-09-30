@@ -1,37 +1,36 @@
 import { useMemo, useState } from "react";
 import { BottomNav } from "./components/BottomNav";
 import type { Tab } from "./components/BottomNav";
-import { PHASES } from "./data/phases";
 import { GOALS } from "./data/settings";
-import { targetsFor, timing } from "./engine/phase";
-import { doneByDiscipline, lagging, sessionsOf } from "./engine/week";
+import { SESSION_GUIDES } from "./data/sessionGuides";
+import type { Session, Template } from "./data/types";
+import { signals } from "./engine/advice";
+import { blankSession, fromTemplate, newId } from "./engine/session";
 import { cssPace, isValidTest } from "./lib/swim";
-import { dateOf, mondayKey, shiftWeek, weekOf, weeksBetween } from "./lib/date";
-import { ExtraForm } from "./screens/ExtraForm";
-import { History } from "./screens/History";
-import { Periods } from "./screens/Periods";
-import { Pick } from "./screens/Pick";
-import { Session } from "./screens/Session";
+import { daysUntil, mondayKey, shiftWeek, weekOf, weeksBetween } from "./lib/date";
+import { Choose } from "./screens/Choose";
+import { Library } from "./screens/Library";
+import { Measures } from "./screens/Measures";
+import { SessionView } from "./screens/SessionView";
 import { Settings } from "./screens/Settings";
+import { TemplateEdit } from "./screens/TemplateEdit";
 import { Week } from "./screens/Week";
-import { journalKey } from "./store/db";
-import { useExtras } from "./store/useExtras";
-import { useJournal } from "./store/useJournal";
+import { useLibrary } from "./store/useLibrary";
+import { useSessions } from "./store/useSessions";
 import { useSettings } from "./store/useSettings";
 import { useWeights } from "./store/useWeights";
-import { useWeek } from "./store/useWeek";
 import { useWriteAlert } from "./store/useWriteAlert";
 import { useSync } from "./sync/useSync";
-import { INK, LINE, MUTED, PAPER, WARN_BG, WARN_TX } from "./theme";
+import { INK, MUTED, PAPER, WARN_BG, WARN_TX } from "./theme";
 
-/** Jusqu'où on peut remonter dans le passé. Au-delà, l'historique fait le travail. */
-const PAST_WEEKS = 8;
+/** Jusqu'où on peut remonter dans le passé depuis l'écran de semaine. */
+const PAST_WEEKS = 12;
 
-/** Ce qui s'affiche par-dessus la semaine. */
+/** Ce qui s'affiche par-dessus l'onglet courant. */
 type View =
   | { kind: "session"; id: string }
-  | { kind: "pick"; day: string }
-  | { kind: "extra"; day: string; id?: string }
+  | { kind: "choose"; day: string }
+  | { kind: "template"; template: Template }
   | null;
 
 export default function App() {
@@ -39,49 +38,44 @@ export default function App() {
   const [view, setView] = useState<View>(null);
 
   const { settings, loaded, update } = useSettings();
-  const { journal, mark } = useJournal();
-  const { extras, save: saveExtra, remove: removeExtra } = useExtras();
+  const store = useSessions();
+  const library = useLibrary();
   const { weights, record } = useWeights();
   const sync = useSync();
   const writeAlert = useWriteAlert();
-  const { goal, mode, zones, raceDate, access, swimTest } = settings;
 
   const currentWeek = useMemo(() => mondayKey(), []);
   const [week, setWeek] = useState(currentWeek);
-  const weekStore = useWeek(week);
 
-  const factor = GOALS.find((g) => g.id === goal)!.factor;
-
-  // Le compte à rebours reste relatif à aujourd'hui, la phase à la semaine consultée :
-  // préparer la semaine prochaine avec la phase d'aujourd'hui donnerait un conseil faux.
-  const daysToRace = useMemo(() => timing(raceDate).days, [raceDate]);
-  const { phase, easyWeek, weekInBlock } = useMemo(
-    () => timing(raceDate, dateOf(week, "Lundi").getTime()),
-    [raceDate, week],
-  );
+  const days = useMemo(() => daysUntil(settings.raceDate), [settings.raceDate]);
+  const goal = GOALS.find((g) => g.id === settings.goal)!;
 
   // Allure de seuil en natation, si le test a été fait.
   const css = useMemo(
     () =>
-      swimTest && isValidTest(swimTest.t400, swimTest.t200)
-        ? cssPace(swimTest.t400, swimTest.t200)
+      settings.swimTest && isValidTest(settings.swimTest.t400, settings.swimTest.t200)
+        ? cssPace(settings.swimTest.t400, settings.swimTest.t200)
         : undefined,
-    [swimTest],
+    [settings.swimTest],
   );
 
-  const sessions = useMemo(
-    () => sessionsOf(weekStore.stored, journal, week),
-    [weekStore.stored, journal, week],
+  const weekSessions = useMemo(
+    () => store.sessions.filter((s) => s.week === week),
+    [store.sessions, week],
   );
-  const weekExtras = useMemo(() => extras.filter((x) => x.week === week), [extras, week]);
+  const advice = useMemo(() => signals(store.sessions, currentWeek), [store.sessions, currentWeek]);
 
-  const targets = useMemo(() => targetsFor(phase, factor, mode), [phase, factor, mode]);
-  const done = useMemo(() => doneByDiscipline(journal, extras, week), [journal, extras, week]);
-  const late = useMemo(() => lagging(done, targets), [done, targets]);
+  const ready = loaded && store.loaded && library.loaded;
+  const opened = view?.kind === "session" ? store.sessions.find((s) => s.id === view.id) : undefined;
+  const overlay = Boolean(opened) || view?.kind === "choose" || view?.kind === "template";
 
-  const ready = loaded && weekStore.loaded;
+  // La fiche de séance vient du modèle d'origine, quand la séance en vient d'un.
+  const guide = useMemo(() => {
+    const from = opened?.from ? library.templates.find((t) => t.id === opened.from) : undefined;
+    return from?.guide ? SESSION_GUIDES[from.guide as keyof typeof SESSION_GUIDES] : undefined;
+  }, [opened, library.templates]);
 
-  const lastWeek = useMemo(() => weekOf(raceDate), [raceDate]);
+  const lastWeek = useMemo(() => weekOf(settings.raceDate), [settings.raceDate]);
   const firstWeek = useMemo(() => shiftWeek(currentWeek, -PAST_WEEKS), [currentWeek]);
   const goWeek = (delta: number) => {
     const next = shiftWeek(week, delta);
@@ -90,15 +84,13 @@ export default function App() {
     setWeek(next);
   };
 
-  // Une vue dont l'objet a disparu (séance retirée ailleurs) retombe sur la semaine.
-  const opened = view?.kind === "session" ? sessions.find((s) => s.id === view.id) : undefined;
-  const editedExtra =
-    view?.kind === "extra" && view.id ? extras.find((x) => x.id === view.id) : undefined;
-  const overlay =
-    Boolean(opened) || view?.kind === "pick" || (view?.kind === "extra" && (!view.id || editedExtra));
-
-  const goalLabel = GOALS.find((g) => g.id === goal)!.label;
   const back = () => setView(null);
+
+  /** Pose une séance sur un jour et l'ouvre : on enchaîne presque toujours sur son contenu. */
+  const place = (session: Session) => {
+    store.add(session);
+    setView({ kind: "session", id: session.id });
+  };
 
   return (
     <div
@@ -125,91 +117,76 @@ export default function App() {
         )}
 
         {ready && !overlay && (
-          <div>
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <p className="m-0 text-base font-medium">{goalLabel}</p>
-                <p className="m-0 mt-1 text-xs" style={{ color: MUTED }}>
-                  Phase {phase.label.toLowerCase()} · semaine {weekInBlock} sur 4
-                  {easyWeek ? " · allégée" : ""}
-                </p>
-              </div>
-              <div className="text-right">
-                <p
-                  className="m-0 leading-none"
-                  style={{ fontSize: 34, fontWeight: 500, letterSpacing: "-0.02em" }}
-                >
-                  {daysToRace}
-                </p>
-                <p className="m-0 text-xs" style={{ color: MUTED }}>
-                  jours
-                </p>
-              </div>
+          <div className="flex justify-between items-start mb-5">
+            <div>
+              <p className="m-0 text-base font-medium">{goal.label}</p>
+              <p className="m-0 mt-1 text-xs" style={{ color: MUTED }}>
+                {goal.detail}
+              </p>
             </div>
-            <div className="flex gap-1 mb-5">
-              {PHASES.map((p) => (
-                <div
-                  key={p.id}
-                  style={{ flexGrow: p.span, height: 4, background: p.id === phase.id ? INK : LINE }}
-                />
-              ))}
+            <div className="text-right">
+              <p
+                className="m-0 leading-none"
+                style={{ fontSize: 34, fontWeight: 500, letterSpacing: "-0.02em" }}
+              >
+                {days}
+              </p>
+              <p className="m-0 text-xs" style={{ color: MUTED }}>
+                jours
+              </p>
             </div>
           </div>
         )}
 
         {ready && opened && (
-          <Session
+          <SessionView
+            key={opened.id}
             session={opened}
-            week={week}
-            phase={phase}
-            weekInBlock={weekInBlock}
-            zones={zones}
+            sessions={store.sessions}
+            movements={library.movements}
+            guide={guide}
             css={css}
-            mode={mode}
-            state={journal[journalKey(week, opened.id)]?.state}
-            onMark={(st) => mark(week, opened, st)}
-            onMove={(day) => weekStore.move(opened.id, day)}
-            onResize={(dur) => weekStore.resize(opened.id, dur)}
+            onPatch={(change) => store.patch(opened.id, change)}
+            onItems={(items) => store.setItems(opened.id, items)}
+            onDone={(itemId, done) => store.setDone(opened.id, itemId, done)}
+            onMark={(state) => store.mark(opened.id, state)}
+            onActual={(actual) => store.setActual(opened.id, actual)}
+            onSaveTemplate={library.saveTemplate}
             onRemove={() => {
-              weekStore.remove(opened.id);
+              store.remove(opened.id);
               back();
             }}
             onBack={back}
           />
         )}
 
-        {ready && view?.kind === "pick" && (
-          <Pick
+        {ready && view?.kind === "choose" && (
+          <Choose
             week={week}
             day={view.day}
-            access={access}
-            phase={phase}
-            mode={mode}
-            late={late}
-            already={sessions.flatMap((s) => s.blocks.map((b) => b.id))}
-            onAdd={(block, dur) => {
-              weekStore.add(view.day, block, dur);
-              back();
-            }}
+            templates={library.templates}
+            onPick={(t) => place(fromTemplate(t, week, view.day))}
+            onBlank={() => place(blankSession(week, view.day))}
             onBack={back}
           />
         )}
 
-        {ready && view?.kind === "extra" && (!view.id || editedExtra) && (
-          <ExtraForm
-            // Une clé par séance : passer d'une séance extra à l'autre repart d'un formulaire neuf.
-            key={view.id ?? `new-${view.day}`}
-            week={week}
-            day={editedExtra?.day ?? view.day}
-            initial={editedExtra}
-            onSave={(x) => {
-              saveExtra(x);
+        {ready && view?.kind === "template" && (
+          <TemplateEdit
+            template={view.template}
+            movements={library.movements}
+            onSave={(t) => {
+              library.saveTemplate(t);
               back();
             }}
-            onRemove={(id) => {
-              removeExtra(id);
-              back();
-            }}
+            onDelete={
+              view.template.builtIn
+                ? undefined
+                : () => {
+                    library.deleteTemplate(view.template.id);
+                    back();
+                  }
+            }
             onBack={back}
           />
         )}
@@ -220,56 +197,51 @@ export default function App() {
             offset={weeksBetween(currentWeek, week)}
             canGoBack={shiftWeek(week, -1) >= firstWeek}
             canGoForward={shiftWeek(week, 1) <= lastWeek}
-            sessions={sessions}
-            extras={weekExtras}
-            journal={journal}
-            phase={phase}
-            weekInBlock={weekInBlock}
-            easyWeek={easyWeek}
-            late={late}
-            lateWeeks={done.weeks}
-            targets={targets}
+            sessions={weekSessions}
+            signal={advice[0]}
             onGoWeek={goWeek}
             onBackToCurrent={() => setWeek(currentWeek)}
-            onOpenSession={(id) => setView({ kind: "session", id })}
-            onProgram={(day) => setView({ kind: "pick", day })}
-            onAddExtra={(day) => setView({ kind: "extra", day })}
-            onOpenExtra={(id) => {
-              const x = extras.find((e) => e.id === id);
-              if (x) setView({ kind: "extra", day: x.day, id });
-            }}
+            onOpen={(id) => setView({ kind: "session", id })}
+            onAdd={(day) => setView({ kind: "choose", day })}
           />
         )}
 
-        {ready && !overlay && tab === "historique" && (
-          <History
-            journal={journal}
-            extras={extras}
-            week={currentWeek}
+        {ready && !overlay && tab === "bibliotheque" && (
+          <Library
+            templates={library.templates}
+            archived={library.archived}
+            onCreate={() =>
+              setView({
+                kind: "template",
+                template: { id: newId(), name: "", disc: "course", items: [] },
+              })
+            }
+            onEdit={(id) => {
+              const template = [...library.templates, ...library.archived].find((t) => t.id === id);
+              if (template) setView({ kind: "template", template });
+            }}
+            onDuplicate={(t) =>
+              setView({
+                kind: "template",
+                template: { ...t, id: newId(), name: `${t.name} (copie)`, builtIn: undefined },
+              })
+            }
+            onArchive={library.archiveTemplate}
+          />
+        )}
+
+        {ready && !overlay && tab === "mesures" && (
+          <Measures
+            sessions={store.sessions}
+            signals={advice}
+            currentWeek={currentWeek}
             weights={weights}
             onRecordWeight={record}
           />
         )}
 
         {ready && !overlay && tab === "reglages" && (
-          <Settings
-            settings={settings}
-            today={currentWeek}
-            sync={sync}
-            onChange={update}
-            onShowPeriods={() => setTab("periodes")}
-            onShowWeek={() => setTab("semaine")}
-          />
-        )}
-
-        {ready && !overlay && tab === "periodes" && (
-          <Periods
-            phase={phase}
-            mode={mode}
-            factor={factor}
-            access={access}
-            onBack={() => setTab("reglages")}
-          />
+          <Settings settings={settings} today={currentWeek} sync={sync} onChange={update} />
         )}
 
         {ready && !overlay && <BottomNav tab={tab} onChange={setTab} />}

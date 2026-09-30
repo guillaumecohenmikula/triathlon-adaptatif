@@ -168,3 +168,104 @@ export interface JournalEntry {
 }
 
 export type Journal = Record<string, JournalEntry>;
+
+/* ---------------------------------------------------------------------------
+ * Le carnet (2026-09-30). Guil compose ses propres séances et les place lui-même ;
+ * l'app enregistre ce qu'il a fait et le mesure. Les types au-dessus servent
+ * désormais de source à la bibliothèque fournie et aux fiches d'exécution.
+ * ------------------------------------------------------------------------- */
+
+/** Comment un élément de séance se mesure. */
+export type ItemKind = "reps" | "time" | "distance";
+
+/** Un mouvement de la bibliothèque : un exercice de renfo, un éducatif. */
+export interface Movement {
+  id: string;
+  name: string;
+  disc: ActivityId;
+  kind: ItemKind;
+  /** Fiche d'exécution, quand le mouvement en a une. */
+  guide?: string;
+  /** Vrai pour ceux fournis avec l'app, faux pour ceux que Guil crée. */
+  builtIn?: boolean;
+}
+
+/** Un élément de séance : un exercice, un bloc de durée, une distance à couvrir. */
+export interface Item {
+  id: string;
+  /** Mouvement de la bibliothèque dont il vient, s'il en vient. */
+  movement?: string;
+  label: string;
+  kind: ItemKind;
+  /** Nombre de séries, pour un exercice. */
+  sets?: number;
+  /** Ce qu'on fait par série : « 8 », « 8-12 », « max », « 45 s ». */
+  reps?: string;
+  /** Charge : « 60 kg », « élastique », « poids du corps ». */
+  load?: string;
+  minutes?: number;
+  /** Mètres. */
+  distance?: number;
+  /** Repos entre les séries, en secondes. */
+  rest?: number;
+  /** Série d'intervalles : n fois `work` minutes séparées de `rest` minutes. */
+  rep?: Repeats;
+  note?: string;
+}
+
+/** Un modèle de séance, réutilisable autant de fois qu'on veut. */
+export interface Template {
+  id: string;
+  name: string;
+  disc: ActivityId;
+  items: Item[];
+  note?: string;
+  /** Fiche de séance, pour les modèles fournis avec l'app. */
+  guide?: string;
+  builtIn?: boolean;
+  /** Sorti de la liste sans effacer les séances qui en sont issues. */
+  archived?: boolean;
+}
+
+/** Ce qui a réellement été fait sur un élément. */
+export interface DoneItem {
+  /** Une entrée par série réalisée. */
+  sets?: { reps?: number; load?: number }[];
+  minutes?: number;
+  distance?: number;
+}
+
+/** Les chiffres de la séance : saisis à la main, ou repris de la montre. */
+export interface Actual {
+  minutes?: number;
+  /** Mètres. */
+  distance?: number;
+  avgHr?: number;
+  maxHr?: number;
+  /** Effort ressenti, de 1 à 10. */
+  rpe?: number;
+  calories?: number;
+  /** Dénivelé positif, en mètres. */
+  elevation?: number;
+  /** Identifiant de l'activité Strava rattachée. */
+  strava?: number;
+}
+
+/** Une séance du carnet : ce qui était prévu, et ce qui a été fait. */
+export interface Session {
+  id: string;
+  /** Lundi ISO de la semaine. */
+  week: string;
+  day: string;
+  title: string;
+  disc: ActivityId;
+  /** Copie des éléments au placement : modifier un modèle ne réécrit pas le passé. */
+  items: Item[];
+  /** Ce qui a été fait, par identifiant d'élément. */
+  done?: Record<string, DoneItem>;
+  state?: SessionState;
+  actual?: Actual;
+  note?: string;
+  /** Modèle d'origine, pour information. */
+  from?: string;
+}

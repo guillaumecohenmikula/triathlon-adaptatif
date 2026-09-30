@@ -1,9 +1,12 @@
 # Programme adaptatif
 
-Application d'entraînement triathlon. La semaine se compose à la main dans un catalogue de
-séances, où ce qui convient à la phase de préparation passe en premier. Chaque séance se déroule
-comme avec un coach : consignes d'exécution, dosage de l'effort, minuteur de repos et chrono des
-intervalles. Les séances faites hors programme se notent aussi, et comptent dans le volume.
+Carnet d'entraînement triathlon. On y compose ses propres séances, on les pose sur la semaine, on
+note ce qu'on a réellement fait (charges soulevées, durée, distance, fréquence cardiaque, effort),
+et l'app mesure : volume et régularité, allures, progression des charges, charge d'entraînement.
+Elle conseille rarement, et seulement à partir des chiffres.
+
+Les séances fournies et les fiches d'exécution servent de point de départ : elles se modifient,
+se dupliquent et s'archivent comme les autres.
 
 Outil personnel, construit pour une préparation de triathlon M en juin 2027.
 Les notes de conception et la feuille de route restent hors du dépôt.
@@ -21,22 +24,23 @@ npm run build    # build de production + service worker PWA
 
 | Dossier | Rôle |
 |---|---|
-| `src/data/` | Le contenu : blocs de séance, exercices et leurs fiches d'exécution, fiches des séances d'endurance, phases, échauffements, segments. Aucune logique. |
-| `src/engine/` | Les calculs, en **fonctions pures et testées** : phase, séances conseillées, retard par discipline, déroulé d'une séance, repos, chrono. |
-| `src/store/` | Persistance IndexedDB via Dexie : réglages, journal, semaines, séances extra, pesées. |
+| `src/data/` | Le contenu : bibliothèque fournie (`library.ts`, dérivée des blocs, exercices et segments), fiches d'exécution, fiches de séance. Aucune logique. |
+| `src/engine/` | Les calculs, en **fonctions pures et testées** : séance, indicateurs, conseils, repos, chrono, conversion de l'ancien modèle. |
+| `src/store/` | Persistance IndexedDB via Dexie : réglages, séances, modèles, mouvements, pesées. |
 | `src/sync/` | Synchronisation Supabase entre appareils, locale d'abord. |
-| `src/screens/` | Semaine, catalogue, séance, séance extra, historique, réglages, plan par période. |
-| `src/components/` | Pas-à-pas, chrono, fiches coach, sélecteurs, navigation. |
+| `src/screens/` | Semaine, choix d'une séance, séance, bibliothèque, édition d'un modèle, mesures, réglages. |
+| `src/components/` | Pas-à-pas, chrono, fiches, éditeur d'élément, sélecteurs, navigation. |
 
 ## Les calculs en quelques lignes
 
-`timing()` déduit de la date de course la phase et la position dans le cycle de quatre semaines.
-`recommended()` donne les séances de la phase réalisables avec le matériel coché, et `lagging()`
-signale les disciplines dont la part du volume réel est nettement sous celle que prévoit la phase.
+Une séance est une copie autonome : modifier un modèle ne touche pas aux séances déjà posées.
+`weekly()`, `paces()` et `movements()` ne mesurent que ce qui a été fait, jamais ce qui était
+prévu. `signals()` ne parle que quand l'écart est net : discipline laissée de côté, semaine qui
+dépasse nettement les précédentes, sortie longue courue trop vite.
 
-`buildSteps()` déroule une séance pour la durée choisie : `selectExos()` remplit le renfo, et les
-segments d'endurance se partagent la durée sans toucher aux séries d'intervalles. `timeline()` en
-tire les phases du chrono, `restSeconds()` le repos entre deux séries.
+`timeline()` déplie les séries d'intervalles en phases de chrono, `restSeconds()` lit le repos
+dans la consigne, et `migrate()` convertit l'ancien modèle en produisant des identifiants
+déterministes, pour que deux appareils ne dupliquent pas l'historique.
 
 Rien ne pose de séance à la place de l'utilisateur : c'est un choix, pas un manque.
 

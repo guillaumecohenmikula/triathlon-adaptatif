@@ -34,6 +34,10 @@ export const dateOf = (week: string, day: string) => {
 export const dayLabel = (week: string, day: string) =>
   dateOf(week, day).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 
+/** Jours restants avant une date, jamais négatif. */
+export const daysUntil = (iso: string, now: Date = new Date()) =>
+  Math.max(0, Math.ceil((parseISO(iso).getTime() - now.getTime()) / 86_400_000));
+
 /** Clé de la semaine qui contient une date ISO donnée. */
 export const weekOf = (iso: string) => mondayKey(parseISO(iso));
 

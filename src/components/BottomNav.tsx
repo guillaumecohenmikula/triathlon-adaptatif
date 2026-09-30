@@ -1,10 +1,11 @@
 import { INK, LINE, MUTED, PAPER } from "../theme";
 
-export type Tab = "semaine" | "historique" | "reglages" | "periodes";
+export type Tab = "semaine" | "bibliotheque" | "mesures" | "reglages";
 
 const ENTRIES: [Tab, string][] = [
   ["semaine", "Semaine"],
-  ["historique", "Historique"],
+  ["bibliotheque", "Séances"],
+  ["mesures", "Mesures"],
   ["reglages", "Réglages"],
 ];
 
@@ -22,8 +23,7 @@ export function BottomNav({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => v
       }}
     >
       {ENTRIES.map(([id, label]) => {
-        // Le plan par période est une sous-vue des réglages, l'onglet reste allumé.
-        const on = tab === id || (id === "reglages" && tab === "periodes");
+        const on = tab === id;
         return (
           <button
             key={id}

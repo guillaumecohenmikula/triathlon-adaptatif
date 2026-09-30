@@ -1,13 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { buildSteps } from "../steps";
+import type { Item } from "../../data/types";
 import { locate, timeable, timeline, totalSeconds } from "../timeline";
 
-const steps = (id: Parameters<typeof buildSteps>[0][0]["id"], dur: number) =>
-  buildSteps([{ id, dur }], "dev", 1, {});
+const warm: Item = { id: "a", label: "Échauffement", kind: "time", minutes: 15 };
+const main: Item = {
+  id: "b",
+  label: "Corps de séance",
+  kind: "time",
+  minutes: 41,
+  rep: { n: 4, work: 8, rest: 3 },
+  note: "Allure la plus rapide tenable sur les quatre séries",
+};
+const cool: Item = { id: "c", label: "Retour au calme", kind: "time", minutes: 10 };
+const items = [warm, main, cool];
 
-describe("chrono des séances d'endurance", () => {
+describe("chrono d'une séance", () => {
   it("déplie le 4 × 8 min en efforts et récupérations", () => {
-    const phases = timeline(steps("quality", 70));
+    const phases = timeline(items, "course");
     expect(phases.map((p) => p.kind)).toEqual([
       "steady",
       "work",
@@ -19,41 +28,39 @@ describe("chrono des séances d'endurance", () => {
       "work",
       "steady",
     ]);
-    expect(phases[1]).toMatchObject({ label: "Effort 1 sur 4", sec: 480 });
+    expect(phases[1]).toMatchObject({ label: "Effort 1 sur 4", sec: 480, item: "b" });
     expect(phases[2].sec).toBe(180);
   });
 
-  it("dure exactement la séance choisie", () => {
-    expect(totalSeconds(timeline(steps("quality", 70)))).toBe(70 * 60);
-    expect(totalSeconds(timeline(steps("longRun", 65)))).toBe(65 * 60);
+  it("dure la somme des éléments, récupérations comprises", () => {
+    expect(totalSeconds(timeline(items, "course"))).toBe((15 + 41 + 10) * 60);
   });
 
   it("adapte la consigne de récupération à la discipline", () => {
-    const bike = timeline(steps("bikeGymInt", 60)).find((p) => p.kind === "rest")!;
-    expect(bike.text).toMatch(/Résistance minimale/);
+    expect(timeline(items, "velo").find((p) => p.kind === "rest")!.text).toMatch(/Résistance/);
+    expect(timeline(items, "course").find((p) => p.kind === "rest")!.text).toMatch(/Trot/);
   });
 
-  it("ne sert ni à la piscine ni au renfo", () => {
-    expect(timeable(steps("longRun", 60))).toBe(true);
-    expect(timeable(steps("bikeGym", 45))).toBe(true);
-    expect(timeable(steps("swimEnd", 60))).toBe(false);
-    expect(timeable(steps("strFull", 60))).toBe(false);
+  it("ne sert ni à la piscine ni à une séance d'exercices", () => {
+    expect(timeable(items, "course")).toBe(true);
+    expect(timeable(items, "natation")).toBe(false);
+    expect(timeable([{ id: "x", label: "Squat", kind: "reps", sets: 4 }], "renfo")).toBe(false);
+    expect(timeable([], "course")).toBe(false);
   });
 });
 
 describe("position dans le chrono", () => {
-  const phases = timeline(steps("quality", 70));
-  const warm = phases[0].sec;
+  const phases = timeline(items, "course");
 
   it("commence par la première phase", () => {
-    expect(locate(phases, 0)).toMatchObject({ index: 0, remaining: warm });
+    expect(locate(phases, 0)).toMatchObject({ index: 0, remaining: 900 });
   });
 
   it("bascule sur le premier effort à la fin de l'échauffement", () => {
-    expect(locate(phases, warm)).toMatchObject({ index: 1, remaining: 480, start: warm });
+    expect(locate(phases, 900)).toMatchObject({ index: 1, remaining: 480, start: 900 });
   });
 
   it("signale la fin une fois la dernière phase passée", () => {
-    expect(locate(phases, 70 * 60).index).toBe(phases.length);
+    expect(locate(phases, 66 * 60).index).toBe(phases.length);
   });
 });

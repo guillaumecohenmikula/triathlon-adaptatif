@@ -7,7 +7,7 @@
 -- sans avoir à comparer les contenus.
 create table if not exists tri_sync (
   user_id    uuid        not null references auth.users on delete cascade,
-  -- 'settings' | 'journal' | 'week' | 'weight' | 'extra'
+  -- 'settings' | 'weight' | 'session' | 'template' | 'movement' (+ anciennes familles)
   kind       text        not null,
   -- l'identifiant local : 'app', '2026-09-07|<id de séance>', '2026-09-07', ...
   key        text        not null,

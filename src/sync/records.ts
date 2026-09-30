@@ -1,5 +1,15 @@
 /** Les familles d'enregistrements que l'app synchronise. */
-export type SyncKind = "settings" | "journal" | "week" | "weight" | "extra";
+export type SyncKind =
+  | "settings"
+  | "weight"
+  | "session"
+  | "template"
+  | "movement"
+  /* Familles de l'ancien modèle : plus poussées depuis la conversion en carnet, mais
+     toujours reconnues pour que ce qu'un autre appareil a déjà envoyé reste lisible. */
+  | "journal"
+  | "week"
+  | "extra";
 
 export interface SyncRecord {
   kind: SyncKind;

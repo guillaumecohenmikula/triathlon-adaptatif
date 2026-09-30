@@ -50,3 +50,22 @@ export const swimPaces = (css: number) => ({
   seuil: css,
   vitesse: css - 4,
 });
+
+/** Faute de test CSS, on décrit l'intention plutôt que d'inventer une allure. */
+const FALLBACK: Record<string, string> = {
+  endurance: "allure facile",
+  seuil: "allure de seuil",
+  vitesse: "allure rapide",
+};
+
+/**
+ * Remplace les jetons d'allure des consignes de natation par les allures réelles.
+ * Sans test CSS, le texte reste utilisable mais qualitatif.
+ */
+export function withPaces(text: string, css?: number) {
+  return text.replace(/\{(endurance|seuil|vitesse)\}\/100m/g, (_, key: string) => {
+    if (css === undefined) return FALLBACK[key];
+    const paces = swimPaces(css);
+    return `${formatPace(paces[key as keyof ReturnType<typeof swimPaces>])}/100m`;
+  });
+}

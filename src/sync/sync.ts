@@ -8,14 +8,14 @@ const TABLE = "tri_sync";
 /** Où chaque famille d'enregistrements vit en local, et comment on l'identifie. */
 const SOURCES: {
   kind: SyncKind;
-  table: "settings" | "journal" | "weeks" | "weights" | "extras";
+  table: "settings" | "weights" | "sessions" | "templates" | "movements";
   keyOf: (r: LocalRow) => string;
 }[] = [
   { kind: "settings", table: "settings", keyOf: (r) => String(r.key) },
-  { kind: "journal", table: "journal", keyOf: (r) => String(r.key) },
-  { kind: "week", table: "weeks", keyOf: (r) => String(r.week) },
   { kind: "weight", table: "weights", keyOf: (r) => String(r.week) },
-  { kind: "extra", table: "extras", keyOf: (r) => String(r.id) },
+  { kind: "session", table: "sessions", keyOf: (r) => String(r.id) },
+  { kind: "template", table: "templates", keyOf: (r) => String(r.id) },
+  { kind: "movement", table: "movements", keyOf: (r) => String(r.id) },
 ];
 
 const byKind = Object.fromEntries(SOURCES.map((s) => [s.kind, s])) as Record<

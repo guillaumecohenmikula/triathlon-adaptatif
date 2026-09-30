@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
+import type { ActivityId, Item } from "../data/types";
 import { clock } from "../engine/rest";
-import type { Step } from "../engine/steps";
 import { locate, timeline, totalSeconds } from "../engine/timeline";
 import { useNow } from "../hooks/useNow";
 import { useWakeLock } from "../hooks/useWakeLock";
@@ -10,7 +10,8 @@ import { INK, LINE, MUTED } from "../theme";
 import type { ChronoState } from "./chronoState";
 
 interface Props {
-  steps: Step[];
+  items: Item[];
+  disc: ActivityId;
   color: string;
   state: ChronoState;
   onState: (s: ChronoState) => void;
@@ -21,8 +22,8 @@ interface Props {
 const KIND = { work: "Effort", rest: "Récupération", steady: "" } as const;
 
 /** Le chrono d'une séance de course ou de vélo : il enchaîne les phases et les annonce. */
-export function Chrono({ steps, color, state, onState, onBack, onFinish }: Props) {
-  const phases = useMemo(() => timeline(steps), [steps]);
+export function Chrono({ items, disc, color, state, onState, onBack, onFinish }: Props) {
+  const phases = useMemo(() => timeline(items, disc), [items, disc]);
   const total = totalSeconds(phases);
   const { startedAt, pausedAt, offset } = state;
 
