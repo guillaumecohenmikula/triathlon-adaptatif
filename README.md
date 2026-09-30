@@ -1,7 +1,8 @@
 # Programme adaptatif
 
 Carnet d'entraînement triathlon. On y compose ses propres séances, on les pose sur la semaine, on
-note ce qu'on a réellement fait (charges soulevées, durée, distance, fréquence cardiaque, effort),
+note ce qu'on a réellement fait (charges soulevées, durée, distance, fréquence cardiaque, effort,
+au clavier ou en important un fichier .gpx ou .tcx de sa montre),
 et l'app mesure : volume et régularité, allures, progression des charges, charge d'entraînement.
 Elle conseille rarement, et seulement à partir des chiffres.
 

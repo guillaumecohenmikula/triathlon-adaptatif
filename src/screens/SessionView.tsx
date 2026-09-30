@@ -12,6 +12,7 @@ import type { Actual, ActivityId, DoneItem, Item, Movement, Session, SessionStat
 import { previousDone } from "../engine/kpi";
 import { addItem, emptyItem, moveItem, newId, plannedMinutes, removeItem, updateItem } from "../engine/session";
 import { timeable } from "../engine/timeline";
+import { parseActivity, summary } from "../lib/activityFile";
 import { dayLabel, humanDuration } from "../lib/date";
 import { distanceInput, distanceUnit, parseDistance, rpeLabel } from "../lib/extra";
 import { withPaces } from "../lib/swim";
@@ -58,6 +59,7 @@ export function SessionView({
   const [idx, setIdx] = useState(0);
   const [confirming, setConfirming] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [imported, setImported] = useState<string | null>(null);
 
   // Les chiffres se saisissent librement et ne partent en base qu'une fois le champ quitté.
   const [draft, setDraft] = useState({
@@ -77,6 +79,36 @@ export function SessionView({
   const num = (v: string) => {
     const n = Number(v.replace(",", "."));
     return v.trim() === "" || !Number.isFinite(n) ? undefined : n;
+  };
+
+  /**
+   * Reprend les chiffres d'un fichier d'activité exporté de Strava ou d'une montre.
+   * Ce que le fichier ne dit pas n'écrase rien : on ne perd pas une saisie à la main.
+   */
+  const importFile = async (file: File) => {
+    const parsed = parseActivity(await file.text());
+    if (!parsed) {
+      setImported("Fichier non reconnu. Il faut un .gpx ou un .tcx, exporté de Strava ou de ta montre.");
+      return;
+    }
+    const next: Actual = {
+      ...session.actual,
+      minutes: parsed.seconds ? Math.round(parsed.seconds / 60) : session.actual?.minutes,
+      distance: parsed.distance ?? session.actual?.distance,
+      avgHr: parsed.avgHr ?? session.actual?.avgHr,
+      maxHr: parsed.maxHr ?? session.actual?.maxHr,
+      calories: parsed.calories ?? session.actual?.calories,
+      elevation: parsed.elevation ?? session.actual?.elevation,
+    };
+    onActual(next);
+    setDraft({
+      minutes: next.minutes?.toString() ?? "",
+      distance: distanceInput(session.disc, next.distance),
+      avgHr: next.avgHr?.toString() ?? "",
+      maxHr: next.maxHr?.toString() ?? "",
+      calories: next.calories?.toString() ?? "",
+    });
+    setImported(`Importé : ${summary(parsed)}`);
   };
 
   const commit = () =>
@@ -394,6 +426,28 @@ export function SessionView({
         </div>
         <p className="m-0 mb-3 text-xs" style={{ color: MUTED }}>
           {session.actual?.rpe ? `${session.actual.rpe}/10 : ${rpeLabel(session.actual.rpe)}.` : "1 très facile, 10 maximal."}
+        </p>
+
+        <label
+          className="flex items-center justify-center w-full mb-2 cursor-pointer text-sm"
+          style={{ height: 44, border: `1px solid ${LINE}`, background: "#fff", color: INK }}
+        >
+          <input
+            type="file"
+            accept=".gpx,.tcx,application/gpx+xml,text/xml"
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void importFile(file);
+              // Remis à zéro pour pouvoir réimporter le même fichier après correction.
+              e.target.value = "";
+            }}
+          />
+          Importer un fichier d'activité
+        </label>
+        <p className="m-0 mb-3 text-xs" style={{ color: MUTED }}>
+          {imported ??
+            "Un .gpx ou un .tcx : sur Strava, ouvre l'activité puis Exporter GPX, et enregistre le fichier dans tes Fichiers."}
         </p>
 
         <p className="m-0 mb-1 text-xs" style={{ color: MUTED }}>
