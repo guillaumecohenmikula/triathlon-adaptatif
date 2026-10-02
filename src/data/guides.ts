@@ -751,6 +751,53 @@ const RAW = {
     easier: "Bras le long du corps.",
     harder: "Tenue de 3 secondes en haut.",
   },
+
+  barbellRow: {
+    name: "Tirage horizontal à la barre",
+    muscles: "Grand dorsal, rhomboïdes, trapèzes moyens, biceps",
+    why: "Le tirage horizontal épaissit le dos et stabilise les omoplates, celles qui encaissent chaque mouvement de bras en crawl.",
+    setup: [
+      "Barre au sol devant toi, pieds largeur de hanches.",
+      "Genoux légèrement fléchis, buste penché vers 45°, dos plat.",
+      "Prise en pronation, un peu plus large que les épaules.",
+    ],
+    steps: [
+      "Serre d'abord les omoplates, sans plier les bras.",
+      "Tire la barre vers le ventre, coudes le long du corps.",
+      "Marque un temps quand la barre touche le ventre.",
+      "Redescends en contrôlant jusqu'aux bras tendus, sans laisser le dos s'arrondir.",
+    ],
+    breathing: "Inspire en bas, expire en tirant.",
+    mistakes: [
+      "Se redresser à chaque répétition pour aider : le buste reste fixe.",
+      "Dos qui s'arrondit : c'est le signal d'arrêter la série et de baisser la charge.",
+      "Tirer vers la poitrine : vise le ventre, c'est là que le dos travaille.",
+    ],
+    easier: "Rowing haltère, un bras à la fois, genou et main en appui sur un banc : le dos est soutenu.",
+    harder: "Pause de 2 secondes barre au ventre, ou descente en 3 secondes.",
+  },
+
+  bicepsCurl: {
+    name: "Curl haltères",
+    muscles: "Biceps, brachial, avant-bras",
+    why: "Du volume pour le haut du corps, ton objectif secondaire assumé. En triathlon le biceps ne limite rien : il passe donc en fin de séance.",
+    setup: [
+      "Debout, pieds largeur de hanches, un haltère dans chaque main, bras le long du corps.",
+      "Coudes collés aux côtes, épaules basses.",
+    ],
+    steps: [
+      "Plie les coudes pour monter les haltères vers les épaules.",
+      "Les coudes n'avancent ni ne reculent : seul l'avant-bras bouge.",
+      "Redescends en 2 à 3 secondes, jusqu'aux bras tendus.",
+    ],
+    breathing: "Expire en montant, inspire en descendant.",
+    mistakes: [
+      "Balancer le buste pour lancer la charge : prends plus léger.",
+      "S'arrêter à mi-course en descendant : l'amplitude complète fait le travail.",
+    ],
+    easier: "Assis sur un banc à dossier : impossible de tricher avec le buste.",
+    harder: "Un bras à la fois, ou pause de 2 secondes en haut.",
+  },
 } satisfies Record<string, ExerciseGuide>;
 
 export type GuideId = keyof typeof RAW;
@@ -763,6 +810,10 @@ export const GUIDES: Record<GuideId, ExerciseGuide> = RAW;
  */
 export const GUIDES_FOR: Record<string, GuideId[]> = {
   Squat: ["backSquat"],
+  "Développé couché": ["benchPress"],
+  "Tirage horizontal à la barre": ["barbellRow"],
+  Dips: ["dips"],
+  "Curl haltères": ["bicepsCurl"],
   "Tractions ou tirage vertical": ["pullup", "latPulldown"],
   "Sauts : squat jump puis bondissements": ["squatJump", "bounds"],
   "Développé couché ou militaire": ["benchPress", "militaryPress"],
