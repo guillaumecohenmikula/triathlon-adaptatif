@@ -2,7 +2,7 @@ import { useState } from "react";
 import { frDate } from "../lib/date";
 import { cssPace, formatPace, formatTime, isValidTest, parseTime, swimPaces } from "../lib/swim";
 import type { SwimTest as SwimTestValue } from "../store/db";
-import { INK, LINE, MUTED, WARN_BG, WARN_TX } from "../theme";
+import { ACCENT, CARD, INK, LINE, MUTED, ON_ACCENT, R, WARN_BG, WARN_TX } from "../theme";
 
 interface Props {
   test?: SwimTestValue;
@@ -14,7 +14,7 @@ interface Props {
 
 const field = {
   border: `1px solid ${LINE}`,
-  background: "#fff",
+  background: CARD,
   color: INK,
 };
 
@@ -88,13 +88,13 @@ export function SwimTest({ test, today, onSave, onClear }: Props) {
       <button
         onClick={submit}
         className="w-full p-2 text-sm cursor-pointer border-none"
-        style={{ background: INK, color: "#fff" }}
+        style={{ background: ACCENT, color: ON_ACCENT }}
       >
         {test ? "Mettre à jour mon allure" : "Calculer mon allure"}
       </button>
 
       {css !== null && paces && test && (
-        <div className="mt-3 p-3" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        <div className="mt-3 p-3" style={{ background: CARD, border: `1px solid ${LINE}` , borderRadius: R.card}}>
           <div className="flex justify-between items-baseline mb-2">
             <p className="m-0 text-xs" style={{ color: MUTED }}>
               Testé le {frDate(test.date)}

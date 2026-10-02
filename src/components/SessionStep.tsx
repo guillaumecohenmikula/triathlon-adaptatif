@@ -6,7 +6,7 @@ import { useNow } from "../hooks/useNow";
 import { useWakeLock } from "../hooks/useWakeLock";
 import { chime, tick, unlockAudio } from "../lib/beep";
 import { withPaces } from "../lib/swim";
-import { INK, LINE, MUTED, PAPER } from "../theme";
+import { ACCENT, CARD, INK, LINE, MUTED, ON_ACCENT, ON_FILL, PAPER, R } from "../theme";
 import { ExerciseGuideView } from "./Guide";
 
 interface Props {
@@ -100,8 +100,19 @@ export function SessionStep({
     if (edits[key] !== undefined) return edits[key];
     const recorded = record?.sets?.[i]?.[field];
     if (recorded !== undefined) return String(recorded);
-    if (field === "reps") return (cur.reps ?? "").match(/^\d+$/) ? (cur.reps as string) : "";
-    const before = last?.sets?.[i]?.load ?? last?.sets?.[last.sets.length - 1]?.load;
+    // À défaut d'un relevé, on propose la prescription, puis la série précédente, puis
+    // ce qui avait été fait la dernière fois : une prescription comme « 4-6 » n'est pas un nombre.
+    const earlier = (record?.sets ?? [])
+      .slice(0, i)
+      .reverse()
+      .find((s) => s[field] !== undefined)?.[field];
+    if (field === "reps") {
+      const plain = /^\d+$/.test(cur.reps ?? "") ? (cur.reps as string) : "";
+      if (plain) return plain;
+    }
+    if (earlier !== undefined) return String(earlier);
+    const sets = last?.sets ?? [];
+    const before = sets[i]?.[field] ?? sets[sets.length - 1]?.[field];
     return before === undefined ? "" : String(before);
   };
 
@@ -128,7 +139,7 @@ export function SessionStep({
     width: "100%",
     height: 44,
     border: `1px solid ${LINE}`,
-    background: "#fff",
+    background: CARD,
     color: INK,
     fontSize: 16,
     textAlign: "center" as const,
@@ -216,10 +227,10 @@ export function SessionStep({
                       width: 52,
                       height: 44,
                       border: `1px solid ${checked ? color : LINE}`,
-                      background: checked ? color : "#fff",
-                      color: checked ? "#fff" : MUTED,
+                      background: checked ? color : CARD,
+                      color: checked ? ON_ACCENT : MUTED,
                       fontSize: 16,
-                    }}
+                     borderRadius: R.pill,}}
                   >
                     ✓
                   </button>
@@ -242,7 +253,15 @@ export function SessionStep({
       )}
 
       {rest && (
-        <div className="p-3 mb-3" style={{ background: remaining > 0 ? INK : color, color: "#fff" }}>
+        <div
+          className="p-3 mb-3"
+          style={{
+            background: remaining > 0 ? CARD : color,
+            border: `1px solid ${remaining > 0 ? color : "transparent"}`,
+            borderRadius: R.card,
+            color: remaining > 0 ? INK : ON_FILL,
+          }}
+        >
           {remaining > 0 ? (
             <>
               <p className="m-0 text-xs" style={{ opacity: 0.8 }}>
@@ -258,14 +277,20 @@ export function SessionStep({
                 <button
                   onClick={() => setRest({ ...rest, endsAt: rest.endsAt + 30_000 })}
                   className="flex-1 cursor-pointer"
-                  style={{ height: 40, border: "1px solid #fff", background: "transparent", color: "#fff" }}
+                  style={{
+                      height: 40,
+                      borderRadius: R.pill,
+                      border: `1px solid ${LINE}`,
+                      background: "transparent",
+                      color: "inherit",
+                    }}
                 >
                   + 30 s
                 </button>
                 <button
                   onClick={() => setRest(null)}
                   className="flex-1 cursor-pointer border-none"
-                  style={{ height: 40, background: "#fff", color: INK }}
+                  style={{ height: 40, borderRadius: R.pill, background: ACCENT, color: ON_ACCENT }}
                 >
                   Passer
                 </button>
@@ -277,7 +302,7 @@ export function SessionStep({
               <button
                 onClick={() => setRest(null)}
                 className="cursor-pointer border-none px-4"
-                style={{ height: 40, background: "#fff", color: INK }}
+                style={{ height: 40, borderRadius: R.pill, background: ACCENT, color: ON_ACCENT }}
               >
                 OK
               </button>
@@ -306,10 +331,10 @@ export function SessionStep({
             width: 100,
             height: 52,
             border: `1px solid ${LINE}`,
-            background: "#fff",
+            background: CARD,
             color: idx === 0 ? LINE : INK,
             fontSize: 15,
-          }}
+           borderRadius: R.field,}}
         >
           Précédent
         </button>
@@ -317,7 +342,7 @@ export function SessionStep({
           <button
             onClick={() => move(idx + 1)}
             className="flex-1 cursor-pointer border-none"
-            style={{ height: 52, background: INK, color: "#fff", fontSize: 16 }}
+            style={{ height: 52, background: ACCENT, color: ON_ACCENT, fontSize: 16 , borderRadius: R.pill}}
           >
             Suivant
           </button>
@@ -325,7 +350,7 @@ export function SessionStep({
           <button
             onClick={onFinish}
             className="flex-1 cursor-pointer border-none"
-            style={{ height: 52, background: color, color: "#fff", fontSize: 16 }}
+            style={{ height: 52, background: color, color: ON_FILL, fontSize: 16 }}
           >
             Séance terminée
           </button>

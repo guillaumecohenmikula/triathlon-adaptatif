@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { ActivityId, Template } from "../data/types";
 import { plannedMinutes } from "../engine/session";
 import { dayLabel } from "../lib/date";
-import { ACTIVITY, INK, LINE, MUTED } from "../theme";
+import { ACCENT, ACTIVITY, CARD, INK, LINE, MUTED, ON_ACCENT, R } from "../theme";
 
 interface Props {
   week: string;
@@ -43,7 +43,7 @@ export function Choose({ week, day, templates, onPick, onBlank, onBack }: Props)
       <button
         onClick={onBlank}
         className="w-full mb-4 cursor-pointer border-none"
-        style={{ height: 48, background: INK, color: "#fff", fontSize: 15 }}
+        style={{ height: 48, background: ACCENT, color: ON_ACCENT, fontSize: 15 , borderRadius: R.pill}}
       >
         Séance vide
       </button>
@@ -53,7 +53,7 @@ export function Choose({ week, day, templates, onPick, onBlank, onBack }: Props)
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Chercher une séance"
         className="w-full p-2 mb-4"
-        style={{ border: `1px solid ${LINE}`, background: "#fff", color: INK, fontSize: 16 }}
+        style={{ border: `1px solid ${LINE}`, background: CARD, color: INK, fontSize: 16 , borderRadius: R.card}}
       />
 
       {ORDER.map((disc) => {
@@ -72,10 +72,10 @@ export function Choose({ week, day, templates, onPick, onBlank, onBack }: Props)
                   onClick={() => onPick(t)}
                   className="w-full text-left mb-1 p-3 cursor-pointer"
                   style={{
-                    background: "#fff",
+                    background: CARD,
                     border: "none",
                     borderLeft: `3px solid ${ACTIVITY[disc].c}`,
-                  }}
+                   borderRadius: R.card,}}
                 >
                   <div className="flex justify-between items-baseline gap-2">
                     <p className="m-0 text-sm font-medium">{t.name}</p>

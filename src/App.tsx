@@ -21,7 +21,7 @@ import { useSettings } from "./store/useSettings";
 import { useWeights } from "./store/useWeights";
 import { useWriteAlert } from "./store/useWriteAlert";
 import { useSync } from "./sync/useSync";
-import { INK, MUTED, PAPER, WARN_BG, WARN_TX } from "./theme";
+import { ACCENT, INK, MUTED, PAPER, WARN_BG, WARN_TX } from "./theme";
 
 /** Jusqu'où on peut remonter dans le passé depuis l'écran de semaine. */
 const PAST_WEEKS = 12;
@@ -117,21 +117,33 @@ export default function App() {
         )}
 
         {ready && !overlay && (
-          <div className="flex justify-between items-start mb-5">
+          <div className="flex justify-between items-center mb-5">
             <div>
-              <p className="m-0 text-base font-medium">{goal.label}</p>
-              <p className="m-0 mt-1 text-xs" style={{ color: MUTED }}>
-                {goal.detail}
+              <p
+                className="m-0 text-xs"
+                style={{ color: MUTED, letterSpacing: "0.12em", textTransform: "uppercase" }}
+              >
+                {goal.label} · juin 2027
               </p>
+              <p className="m-0 mt-1 text-base font-medium">{goal.detail}</p>
             </div>
             <div className="text-right">
               <p
                 className="m-0 leading-none"
-                style={{ fontSize: 34, fontWeight: 500, letterSpacing: "-0.02em" }}
+                style={{
+                  fontSize: 34,
+                  fontWeight: 700,
+                  letterSpacing: "-0.03em",
+                  color: ACCENT,
+                  fontVariantNumeric: "tabular-nums",
+                }}
               >
                 {days}
               </p>
-              <p className="m-0 text-xs" style={{ color: MUTED }}>
+              <p
+                className="m-0 text-xs"
+                style={{ color: MUTED, letterSpacing: "0.12em", textTransform: "uppercase" }}
+              >
                 jours
               </p>
             </div>

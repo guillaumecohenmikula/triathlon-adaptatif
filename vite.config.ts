@@ -34,9 +34,9 @@ export default defineConfig(({ command }) => ({
         lang: 'fr',
         short_name: 'Programme',
         description:
-          "Programme d'entraînement triathlon qui se réorganise selon les créneaux réellement disponibles",
-        theme_color: '#12202B',
-        background_color: '#EDEFF1',
+          "Carnet d'entraînement triathlon : composer ses séances, noter ce qu'on a fait, mesurer",
+        theme_color: '#0E1A24',
+        background_color: '#0E1A24',
         display: 'standalone',
         orientation: 'portrait',
         // start_url et scope sont déduits du `base` ci-dessus, ne pas les figer ici.

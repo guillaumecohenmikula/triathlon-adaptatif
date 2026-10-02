@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { ExerciseGuide } from "../data/guides";
 import type { Drill, SessionGuide } from "../data/sessionGuides";
-import { INK, LINE, MUTED } from "../theme";
+import { CARD, INK, LINE, MUTED, R } from "../theme";
 
 /** Section repliable. Ouverte par défaut pour ce qui sert pendant l'effort. */
 export function Fold({
@@ -14,7 +14,7 @@ export function Fold({
   children: ReactNode;
 }) {
   return (
-    <details open={open} className="mb-2" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+    <details open={open} className="mb-2" style={{ background: CARD, border: `1px solid ${LINE}` , borderRadius: R.card}}>
       <summary className="flex justify-between items-center p-3 text-sm font-medium cursor-pointer">
         {title}
         <span className="fold" style={{ color: MUTED, fontSize: 18, fontWeight: 400 }} />
@@ -109,7 +109,7 @@ export function DrillsView({ drills }: { drills: Drill[] }) {
 export function SessionGuideView({ guide, color }: { guide: SessionGuide; color: string }) {
   return (
     <div className="mb-4">
-      <div className="p-3 mb-2" style={{ background: "#fff", borderLeft: `3px solid ${color}` }}>
+      <div className="p-3 mb-2" style={{ background: CARD, borderLeft: `3px solid ${color}` , borderRadius: R.card}}>
         <p className="m-0 mb-1 text-xs" style={{ color: MUTED }}>
           Le but de la séance
         </p>

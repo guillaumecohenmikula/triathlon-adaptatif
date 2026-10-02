@@ -9,6 +9,10 @@ body,
 body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
+  background: #0e1a24;
+  color: #f2f5f7;
+  /* Les contrôles natifs (champs date, listes déroulantes) suivent le thème sombre. */
+  color-scheme: dark;
 }
 
 /* Sections repliables des fiches coach : un + / − à la place du triangle natif. */

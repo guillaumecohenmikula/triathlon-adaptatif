@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { ActivityId, Template } from "../data/types";
 import { plannedMinutes } from "../engine/session";
-import { ACTIVITY, INK, LINE, MUTED } from "../theme";
+import { ACCENT, ACTIVITY, CARD, INK, LINE, MUTED, ON_ACCENT, R } from "../theme";
 
 interface Props {
   templates: Template[];
@@ -24,7 +24,7 @@ export function Library({ templates, archived, onCreate, onEdit, onDuplicate, on
       <button
         onClick={() => setOpen(open === t.id ? null : t.id)}
         className="w-full text-left p-3 cursor-pointer"
-        style={{ background: "#fff", border: "none", borderLeft: `3px solid ${ACTIVITY[t.disc].c}` }}
+        style={{ background: CARD, border: "none", borderLeft: `3px solid ${ACTIVITY[t.disc].c}` , borderRadius: R.card}}
       >
         <div className="flex justify-between items-baseline gap-2">
           <p className="m-0 text-sm font-medium">{t.name}</p>
@@ -41,25 +41,25 @@ export function Library({ templates, archived, onCreate, onEdit, onDuplicate, on
       </button>
 
       {open === t.id && (
-        <div className="flex gap-1 p-2" style={{ background: "#fff", borderTop: `1px solid ${LINE}` }}>
+        <div className="flex gap-1 p-2" style={{ background: CARD, borderTop: `1px solid ${LINE}` , borderRadius: R.card}}>
           <button
             onClick={() => onEdit(t.id)}
             className="flex-1 text-xs cursor-pointer"
-            style={{ height: 40, border: `1px solid ${LINE}`, background: "#fff", color: INK }}
+            style={{ height: 40, border: `1px solid ${LINE}`, background: CARD, color: INK , borderRadius: R.field}}
           >
             Modifier
           </button>
           <button
             onClick={() => onDuplicate(t)}
             className="flex-1 text-xs cursor-pointer"
-            style={{ height: 40, border: `1px solid ${LINE}`, background: "#fff", color: INK }}
+            style={{ height: 40, border: `1px solid ${LINE}`, background: CARD, color: INK , borderRadius: R.field}}
           >
             Dupliquer
           </button>
           <button
             onClick={() => onArchive(t.id, !t.archived)}
             className="flex-1 text-xs cursor-pointer"
-            style={{ height: 40, border: `1px solid ${LINE}`, background: "#fff", color: MUTED }}
+            style={{ height: 40, border: `1px solid ${LINE}`, background: CARD, color: MUTED , borderRadius: R.field}}
           >
             {t.archived ? "Remettre" : "Archiver"}
           </button>
@@ -78,7 +78,7 @@ export function Library({ templates, archived, onCreate, onEdit, onDuplicate, on
       <button
         onClick={onCreate}
         className="w-full mb-4 cursor-pointer border-none"
-        style={{ height: 48, background: INK, color: "#fff", fontSize: 15 }}
+        style={{ height: 48, background: ACCENT, color: ON_ACCENT, fontSize: 15 , borderRadius: R.pill}}
       >
         Créer une séance
       </button>

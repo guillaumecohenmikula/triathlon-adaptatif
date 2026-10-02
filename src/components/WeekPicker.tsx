@@ -1,5 +1,5 @@
 import { frDate } from "../lib/date";
-import { INK, LINE, MUTED } from "../theme";
+import { CARD, INK, LINE, MUTED, R } from "../theme";
 
 interface Props {
   week: string;
@@ -19,10 +19,11 @@ const relative = (offset: number) => {
 };
 
 const arrow = (enabled: boolean) => ({
-  width: 40,
-  height: 40,
+  width: 44,
+  height: 44,
+  borderRadius: R.pill,
   border: `1px solid ${LINE}`,
-  background: "#fff",
+  background: CARD,
   color: enabled ? INK : LINE,
   fontSize: 16,
   cursor: enabled ? "pointer" : "default",

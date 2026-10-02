@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { frDate } from "../lib/date";
 import type { WeightRow } from "../store/db";
-import { INK, LINE, MUTED } from "../theme";
+import { ACCENT, CARD, INK, LINE, MUTED, ON_ACCENT, R } from "../theme";
 
 interface Props {
   weights: WeightRow[];
@@ -49,7 +49,7 @@ function Curve({ points }: { points: WeightRow[] }) {
       <path d={path} fill="none" stroke={INK} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
 
       {points.map((p, i) => (
-        <circle key={p.week} cx={x(i)} cy={y(p.kg)} r="4" fill={INK} stroke="#fff" strokeWidth="2" />
+        <circle key={p.week} cx={x(i)} cy={y(p.kg)} r="4" fill={INK} stroke={CARD} strokeWidth="2" />
       ))}
 
       {/* Une seule étiquette dans le tracé : le point de départ. La valeur du jour est
@@ -89,7 +89,7 @@ export function WeightTracker({ weights, week, onRecord }: Props) {
   };
 
   return (
-    <div className="mb-4 p-3" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+    <div className="mb-4 p-3" style={{ background: CARD, border: `1px solid ${LINE}` , borderRadius: R.card}}>
       <div className="flex justify-between items-start mb-2">
         <p className="m-0 text-sm font-medium">Poids</p>
         {last && (
@@ -125,13 +125,17 @@ export function WeightTracker({ weights, week, onRecord }: Props) {
           placeholder={current ? kg(current.kg) : "kg"}
           aria-label="Poids en kilogrammes"
           className="flex-1 p-2 text-sm"
-          style={{ border: `1px solid ${LINE}`, background: "#fff", color: INK }}
+          style={{ border: `1px solid ${LINE}`, background: CARD, color: INK , borderRadius: R.card}}
         />
         <button
           onClick={submit}
           disabled={draft.trim() === ""}
           className="px-4 text-sm cursor-pointer border-none"
-          style={{ background: draft.trim() === "" ? LINE : INK, color: "#fff" }}
+          style={{
+            background: draft.trim() === "" ? LINE : ACCENT,
+            color: ON_ACCENT,
+            borderRadius: R.pill,
+          }}
         >
           {current ? "Corriger" : "Noter"}
         </button>

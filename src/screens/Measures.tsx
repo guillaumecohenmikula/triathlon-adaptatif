@@ -7,7 +7,7 @@ import { heart, movements, paceUnit, paces, streak, weekly } from "../engine/kpi
 import { frDate, humanDuration, shiftWeek } from "../lib/date";
 import { formatPaceValue } from "../lib/extra";
 import type { WeightRow } from "../store/db";
-import { ACTIVITY, INK, LINE, MUTED, PAPER, WARN_BG, WARN_TX } from "../theme";
+import { ACTIVITY, CARD, INK, LINE, MUTED, PAPER, R, WARN_BG, WARN_TX } from "../theme";
 
 interface Props {
   sessions: Session[];
@@ -22,7 +22,12 @@ const WEEKS_SHOWN = 12;
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <div className="mb-5">
-    <p className="m-0 mb-2 text-sm font-medium">{title}</p>
+    <p
+      className="m-0 mb-2 text-xs"
+      style={{ color: MUTED, letterSpacing: "0.12em", textTransform: "uppercase" }}
+    >
+      {title}
+    </p>
     {children}
   </div>
 );
@@ -31,7 +36,7 @@ const Section = ({ title, children }: { title: string; children: React.ReactNode
 function VolumeBars({ stats }: { stats: WeekStat[] }) {
   const max = Math.max(...stats.map((s) => s.minutes), 1);
   return (
-    <div className="p-3" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+    <div className="p-3" style={{ background: CARD, border: `1px solid ${LINE}` , borderRadius: R.card}}>
       <div className="flex items-end gap-1" style={{ height: 120 }}>
         {stats.map((s) => (
           <div key={s.week} className="flex-1 flex flex-col justify-end" style={{ height: "100%" }}>
@@ -80,7 +85,7 @@ function PaceLine({ points, disc }: { points: PacePoint[]; disc: ActivityId }) {
   const best = Math.min(...values);
 
   return (
-    <div className="p-3" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+    <div className="p-3" style={{ background: CARD, border: `1px solid ${LINE}` , borderRadius: R.card}}>
       <div className="flex justify-between items-baseline mb-1">
         <p className="m-0 text-sm" style={{ color: ACTIVITY[disc].c }}>
           {ACTIVITY[disc].label}
@@ -134,7 +139,7 @@ export function Measures({ sessions, signals, currentWeek, weights, onRecordWeig
           style={
             s.tone === "warn"
               ? { background: WARN_BG, color: WARN_TX }
-              : { background: "#fff", border: `1px solid ${LINE}`, color: MUTED }
+              : { background: CARD, border: `1px solid ${LINE}`, color: MUTED }
           }
         >
           {s.text}
@@ -150,25 +155,47 @@ export function Measures({ sessions, signals, currentWeek, weights, onRecordWeig
 
       {stats.length > 0 && (
         <>
-          <div className="flex gap-2 mb-5">
-            {[
-              ["Cette semaine", current ? humanDuration(Math.round(current.minutes)) : "0 min"],
-              ["Séances", String(current?.sessions ?? 0)],
-              ["Semaines de suite", String(run)],
-            ].map(([label, value]) => (
-              <div
-                key={label}
-                className="flex-1 p-3"
-                style={{ background: "#fff", border: `1px solid ${LINE}` }}
-              >
-                <p className="m-0" style={{ fontSize: 22, fontWeight: 500, lineHeight: 1.1 }}>
-                  {value}
-                </p>
-                <p className="m-0 mt-1 text-xs" style={{ color: MUTED }}>
-                  {label}
-                </p>
-              </div>
-            ))}
+          <div
+            className="p-4 mb-5"
+            style={{ background: CARD, border: `1px solid ${LINE}`, borderRadius: R.card }}
+          >
+            <p
+              className="m-0 text-xs"
+              style={{ color: MUTED, letterSpacing: "0.12em", textTransform: "uppercase" }}
+            >
+              Cette semaine
+            </p>
+            <p
+              className="m-0 mt-2"
+              style={{
+                fontSize: 44,
+                fontWeight: 700,
+                lineHeight: 1,
+                letterSpacing: "-0.03em",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {current ? humanDuration(Math.round(current.minutes)) : "0 min"}
+            </p>
+            <div className="flex gap-6 mt-4">
+              {[
+                [String(current?.sessions ?? 0), "séances"],
+                [String(run), "semaines de suite"],
+                [weights.length > 0 ? `${weights[weights.length - 1].kg}`.replace(".", ",") : "—", "kg"],
+              ].map(([value, label]) => (
+                <div key={label}>
+                  <p
+                    className="m-0"
+                    style={{ fontSize: 19, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}
+                  >
+                    {value}
+                  </p>
+                  <p className="m-0 mt-1 text-xs" style={{ color: MUTED }}>
+                    {label}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
 
           <Section title="Volume par semaine">
@@ -192,7 +219,7 @@ export function Measures({ sessions, signals, currentWeek, weights, onRecordWeig
           </Section>
 
           <Section title="Semaine par semaine">
-            <div className="p-3" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+            <div className="p-3" style={{ background: CARD, border: `1px solid ${LINE}` , borderRadius: R.card}}>
               {stats.slice(0, 8).map((s) => (
                 <div key={s.week} className="flex justify-between text-xs mb-1">
                   <span style={{ color: s.week === currentWeek ? INK : MUTED }}>
@@ -220,7 +247,7 @@ export function Measures({ sessions, signals, currentWeek, weights, onRecordWeig
 
           {lifts.length > 0 && (
             <Section title="Charges en renfo">
-              <div className="p-3" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+              <div className="p-3" style={{ background: CARD, border: `1px solid ${LINE}` , borderRadius: R.card}}>
                 {lifts.slice(0, 12).map((m) => (
                   <div key={m.movement} className="flex justify-between text-xs mb-1">
                     <span>{m.label}</span>
@@ -239,7 +266,7 @@ export function Measures({ sessions, signals, currentWeek, weights, onRecordWeig
 
           {hr && (
             <Section title="Fréquence cardiaque">
-              <div className="p-3 text-xs" style={{ background: "#fff", border: `1px solid ${LINE}`, color: MUTED }}>
+              <div className="p-3 text-xs" style={{ background: CARD, border: `1px solid ${LINE}`, color: MUTED , borderRadius: R.card}}>
                 {hr.avgHr} bpm en moyenne sur {hr.sessions} séance{hr.sessions > 1 ? "s" : ""}, maximum
                 relevé {hr.maxHr} bpm.
               </div>

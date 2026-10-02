@@ -5,7 +5,7 @@ import { GOALS } from "../data/settings";
 import type { GoalId } from "../data/types";
 import type { Settings as SettingsValues } from "../store/db";
 import type { SyncStore } from "../sync/useSync";
-import { INK, LINE, MUTED } from "../theme";
+import { CARD, INK, LINE, MUTED, R } from "../theme";
 
 interface Props {
   settings: SettingsValues;
@@ -29,7 +29,7 @@ export function Settings({ settings, today, sync, onChange }: Props) {
               key={g.id}
               onClick={() => onChange({ goal: g.id as GoalId })}
               className="text-left p-3 cursor-pointer"
-              style={{ background: "#fff", border: `1px solid ${on ? INK : LINE}` }}
+              style={{ background: CARD, border: `1px solid ${on ? INK : LINE}` , borderRadius: R.card}}
             >
               <p className="m-0 text-sm" style={{ fontWeight: on ? 500 : 400 }}>
                 {g.label}
@@ -48,7 +48,7 @@ export function Settings({ settings, today, sync, onChange }: Props) {
         value={raceDate}
         onChange={(e) => onChange({ raceDate: e.target.value })}
         className="w-full p-2 mb-5 text-sm"
-        style={{ border: `1px solid ${LINE}`, background: "#fff", color: INK }}
+        style={{ border: `1px solid ${LINE}`, background: CARD, color: INK , borderRadius: R.card}}
       />
 
       <div className="mb-5">

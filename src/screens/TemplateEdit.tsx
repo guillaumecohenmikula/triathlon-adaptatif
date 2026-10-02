@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ItemEditor } from "../components/ItemEditor";
 import type { ActivityId, Movement, Template } from "../data/types";
 import { addItem, emptyItem, moveItem, removeItem, updateItem } from "../engine/session";
-import { ACTIVITY, INK, LINE, MUTED, WARN_TX } from "../theme";
+import { ACCENT, ACTIVITY, CARD, INK, LINE, MUTED, ON_ACCENT, R, WARN_TX } from "../theme";
 
 interface Props {
   template: Template;
@@ -20,7 +20,7 @@ export function TemplateEdit({ template, movements, onSave, onDelete, onBack }: 
   const [draft, setDraft] = useState<Template>(template);
   const [confirming, setConfirming] = useState(false);
 
-  const field = { border: `1px solid ${LINE}`, background: "#fff", color: INK, fontSize: 16, padding: 8 };
+  const field = { border: `1px solid ${LINE}`, background: CARD, color: INK, fontSize: 16, padding: 8 };
 
   return (
     <div>
@@ -53,9 +53,9 @@ export function TemplateEdit({ template, movements, onSave, onDelete, onBack }: 
               style={{
                 height: 40,
                 border: `1px solid ${on ? ACTIVITY[a].c : LINE}`,
-                background: on ? ACTIVITY[a].c : "#fff",
-                color: on ? "#fff" : INK,
-              }}
+                background: on ? ACTIVITY[a].c : CARD,
+                color: on ? ON_ACCENT : INK,
+               borderRadius: R.pill,}}
             >
               {ACTIVITY[a].label}
             </button>
@@ -88,7 +88,7 @@ export function TemplateEdit({ template, movements, onSave, onDelete, onBack }: 
             key={kind}
             onClick={() => setDraft({ ...draft, items: addItem(draft.items, emptyItem(kind)) })}
             className="flex-1 text-sm cursor-pointer"
-            style={{ height: 44, border: `1px solid ${LINE}`, background: "#fff", color: INK }}
+            style={{ height: 44, border: `1px solid ${LINE}`, background: CARD, color: INK , borderRadius: R.field}}
           >
             + {kind === "reps" ? "Exercice" : kind === "time" ? "Durée" : "Distance"}
           </button>
@@ -98,7 +98,7 @@ export function TemplateEdit({ template, movements, onSave, onDelete, onBack }: 
       <button
         onClick={() => onSave(draft)}
         className="w-full cursor-pointer border-none"
-        style={{ height: 52, background: INK, color: "#fff", fontSize: 16 }}
+        style={{ height: 52, background: ACCENT, color: ON_ACCENT, fontSize: 16 , borderRadius: R.pill}}
       >
         Enregistrer
       </button>

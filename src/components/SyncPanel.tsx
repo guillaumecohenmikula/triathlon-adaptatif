@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { SyncStore } from "../sync/useSync";
-import { INK, LINE, MUTED, WARN_BG, WARN_TX } from "../theme";
+import { ACCENT, CARD, INK, LINE, MUTED, ON_ACCENT, R, WARN_BG, WARN_TX } from "../theme";
 
-const field = { border: `1px solid ${LINE}`, background: "#fff", color: INK };
+const field = { border: `1px solid ${LINE}`, background: CARD, color: INK };
 
 const ago = (t: number) => {
   const min = Math.round((Date.now() - t) / 60000);
@@ -69,7 +69,7 @@ export function SyncPanel({ sync }: { sync: SyncStore }) {
               onClick={() => void sync.signIn(mail, password)}
               disabled={sync.state === "running" || mail === "" || password === ""}
               className="p-2 text-sm cursor-pointer border-none"
-              style={{ background: INK, color: "#fff" }}
+              style={{ background: ACCENT, color: ON_ACCENT }}
             >
               {sync.state === "running" ? "Connexion…" : "Se connecter"}
             </button>
@@ -88,14 +88,14 @@ export function SyncPanel({ sync }: { sync: SyncStore }) {
               onClick={() => void sync.run()}
               disabled={sync.state === "running"}
               className="flex-1 p-2 text-sm cursor-pointer border-none"
-              style={{ background: INK, color: "#fff" }}
+              style={{ background: ACCENT, color: ON_ACCENT }}
             >
               {sync.state === "running" ? "Synchronisation…" : "Synchroniser maintenant"}
             </button>
             <button
               onClick={() => void sync.signOut()}
               className="p-2 px-3 text-sm cursor-pointer"
-              style={{ border: `1px solid ${LINE}`, background: "#fff", color: MUTED }}
+              style={{ border: `1px solid ${LINE}`, background: CARD, color: MUTED , borderRadius: R.card}}
             >
               Déconnexion
             </button>

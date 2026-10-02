@@ -1,4 +1,4 @@
-import { INK, LINE, MUTED, PAPER } from "../theme";
+import { ACCENT, INK, LINE, MUTED, PAPER } from "../theme";
 
 export type Tab = "semaine" | "bibliotheque" | "mesures" | "reglages";
 
@@ -30,12 +30,14 @@ export function BottomNav({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => v
             onClick={() => onChange(id)}
             className="flex-1 cursor-pointer border-none bg-transparent"
             style={{
-              paddingTop: 10,
-              paddingBottom: 10,
+              paddingTop: 12,
+              paddingBottom: 12,
               color: on ? INK : MUTED,
-              fontSize: 13,
-              fontWeight: on ? 500 : 400,
-              borderTop: `2px solid ${on ? INK : "transparent"}`,
+              fontSize: 11,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              fontWeight: on ? 600 : 400,
+              borderTop: `2px solid ${on ? ACCENT : "transparent"}`,
             }}
           >
             {label}

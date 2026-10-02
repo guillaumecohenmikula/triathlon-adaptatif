@@ -1,7 +1,7 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect, useState } from "react";
 import { db } from "../store/db";
-import { INK, LINE, MUTED, WARN_BG, WARN_TX } from "../theme";
+import { CARD, INK, LINE, MUTED, R, WARN_BG, WARN_TX } from "../theme";
 
 const PROBE = "probe";
 
@@ -45,7 +45,7 @@ export function Diagnostic() {
       <button
         onClick={() => void test()}
         className="w-full p-3 mb-2 text-sm cursor-pointer"
-        style={{ background: "#fff", border: `1px solid ${LINE}`, color: INK }}
+        style={{ background: CARD, border: `1px solid ${LINE}`, color: INK , borderRadius: R.card}}
       >
         Tester l'enregistrement
       </button>
@@ -62,7 +62,7 @@ export function Diagnostic() {
           style={
             stale
               ? { background: WARN_BG, color: WARN_TX }
-              : { background: "#fff", border: `1px solid ${LINE}`, color: MUTED }
+              : { background: CARD, border: `1px solid ${LINE}`, color: MUTED }
           }
         >
           {stale

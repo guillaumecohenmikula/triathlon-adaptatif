@@ -16,7 +16,7 @@ import { parseActivity, summary } from "../lib/activityFile";
 import { dayLabel, humanDuration } from "../lib/date";
 import { distanceInput, distanceUnit, parseDistance, rpeLabel } from "../lib/extra";
 import { withPaces } from "../lib/swim";
-import { ACTIVITY, INK, LINE, MUTED, WARN_TX } from "../theme";
+import { ACCENT, ACTIVITY, CARD, INK, LINE, MUTED, ON_ACCENT, R, WARN_TX } from "../theme";
 
 interface Props {
   session: Session;
@@ -37,7 +37,7 @@ interface Props {
 
 const ACTIVITIES: ActivityId[] = ["course", "velo", "natation", "renfo", "autre"];
 
-const field = { border: `1px solid ${LINE}`, background: "#fff", color: INK, fontSize: 16, padding: 8 };
+const field = { border: `1px solid ${LINE}`, background: CARD, color: INK, fontSize: 16, padding: 8 };
 
 export function SessionView({
   session,
@@ -170,7 +170,12 @@ export function SessionView({
           ← Retour à la séance
         </button>
 
-        <p className="m-0 mb-2 text-sm font-medium">Nom</p>
+        <p
+          className="m-0 mb-2 text-xs"
+          style={{ color: MUTED, letterSpacing: "0.12em", textTransform: "uppercase" }}
+        >
+          Nom
+        </p>
         <input
           value={session.title}
           onChange={(e) => onPatch({ title: e.target.value })}
@@ -179,7 +184,12 @@ export function SessionView({
           style={field}
         />
 
-        <p className="m-0 mb-2 text-sm font-medium">Discipline</p>
+        <p
+          className="m-0 mb-2 text-xs"
+          style={{ color: MUTED, letterSpacing: "0.12em", textTransform: "uppercase" }}
+        >
+          Discipline
+        </p>
         <div className="flex flex-wrap gap-2 mb-5">
           {ACTIVITIES.map((a) => {
             const on = session.disc === a;
@@ -191,9 +201,9 @@ export function SessionView({
                 style={{
                   height: 40,
                   border: `1px solid ${on ? ACTIVITY[a].c : LINE}`,
-                  background: on ? ACTIVITY[a].c : "#fff",
-                  color: on ? "#fff" : INK,
-                }}
+                  background: on ? ACTIVITY[a].c : CARD,
+                  color: on ? ON_ACCENT : INK,
+                 borderRadius: R.pill,}}
               >
                 {ACTIVITY[a].label}
               </button>
@@ -201,7 +211,12 @@ export function SessionView({
           })}
         </div>
 
-        <p className="m-0 mb-2 text-sm font-medium">Déroulé</p>
+        <p
+          className="m-0 mb-2 text-xs"
+          style={{ color: MUTED, letterSpacing: "0.12em", textTransform: "uppercase" }}
+        >
+          Déroulé
+        </p>
         {session.items.map((item, i) => (
           <ItemEditor
             key={item.id}
@@ -221,7 +236,7 @@ export function SessionView({
               key={kind}
               onClick={() => onItems(addItem(session.items, emptyItem(kind)))}
               className="flex-1 text-sm cursor-pointer"
-              style={{ height: 44, border: `1px solid ${LINE}`, background: "#fff", color: INK }}
+              style={{ height: 44, border: `1px solid ${LINE}`, background: CARD, color: INK , borderRadius: R.field}}
             >
               + {kind === "reps" ? "Exercice" : kind === "time" ? "Durée" : "Distance"}
             </button>
@@ -239,7 +254,7 @@ export function SessionView({
             setSaved(true);
           }}
           className="w-full text-sm cursor-pointer"
-          style={{ height: 44, border: `1px solid ${LINE}`, background: "#fff", color: INK }}
+          style={{ height: 44, border: `1px solid ${LINE}`, background: CARD, color: INK , borderRadius: R.field}}
         >
           {saved ? "Enregistré dans tes séances" : "Enregistrer comme modèle réutilisable"}
         </button>
@@ -276,7 +291,7 @@ export function SessionView({
             setMode("etapes");
           }}
           className="w-full mb-5 cursor-pointer border-none"
-          style={{ height: 52, background: INK, color: "#fff", fontSize: 16 }}
+          style={{ height: 52, background: ACCENT, color: ON_ACCENT, fontSize: 16 , borderRadius: R.pill}}
         >
           {withChrono
             ? chrono.startedAt !== null
@@ -295,7 +310,12 @@ export function SessionView({
         </div>
       )}
 
-      <p className="m-0 mb-2 text-sm font-medium">Déroulé</p>
+      <p
+          className="m-0 mb-2 text-xs"
+          style={{ color: MUTED, letterSpacing: "0.12em", textTransform: "uppercase" }}
+        >
+          Déroulé
+        </p>
       {session.items.length === 0 && (
         <p className="m-0 mb-3 text-sm" style={{ color: MUTED }}>
           Cette séance n'a pas encore de contenu. Touche « Modifier la séance » pour en ajouter, ou
@@ -313,7 +333,7 @@ export function SessionView({
               setMode("etapes");
             }}
             className="w-full text-left mb-1 p-3 cursor-pointer"
-            style={{ background: "#fff", border: "none", borderLeft: `3px solid ${color}` }}
+            style={{ background: CARD, border: "none", borderLeft: `3px solid ${color}` , borderRadius: R.card}}
           >
             <div className="flex justify-between items-baseline gap-2">
               <p className="m-0 text-sm font-medium">{item.label || "Sans nom"}</p>
@@ -344,13 +364,18 @@ export function SessionView({
       <button
         onClick={() => setMode("edit")}
         className="w-full mt-2 mb-5 text-sm cursor-pointer"
-        style={{ height: 44, border: `1px solid ${LINE}`, background: "#fff", color: INK }}
+        style={{ height: 44, border: `1px solid ${LINE}`, background: CARD, color: INK , borderRadius: R.field}}
       >
         Modifier la séance
       </button>
 
-      <p className="m-0 mb-2 text-sm font-medium">Ce que tu as fait</p>
-      <div className="p-3 mb-4" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+      <p
+          className="m-0 mb-2 text-xs"
+          style={{ color: MUTED, letterSpacing: "0.12em", textTransform: "uppercase" }}
+        >
+          Ce que tu as fait
+        </p>
+      <div className="p-3 mb-4" style={{ background: CARD, border: `1px solid ${LINE}` , borderRadius: R.card}}>
         <div className="flex gap-2 mb-3">
           <div style={{ flex: 1 }}>
             <p className="m-0 mb-1 text-xs" style={{ color: MUTED }}>
@@ -414,10 +439,10 @@ export function SessionView({
                 style={{
                   height: 38,
                   border: `1px solid ${on ? INK : LINE}`,
-                  background: on ? INK : "#fff",
-                  color: on ? "#fff" : INK,
+                  background: on ? ACCENT : CARD,
+                  color: on ? ON_ACCENT : INK,
                   fontSize: 14,
-                }}
+                 borderRadius: R.pill,}}
               >
                 {n}
               </button>
@@ -430,7 +455,7 @@ export function SessionView({
 
         <label
           className="flex items-center justify-center w-full mb-2 cursor-pointer text-sm"
-          style={{ height: 44, border: `1px solid ${LINE}`, background: "#fff", color: INK }}
+          style={{ height: 44, border: `1px solid ${LINE}`, background: CARD, color: INK , borderRadius: R.field}}
         >
           <input
             type="file"
@@ -462,7 +487,12 @@ export function SessionView({
         />
       </div>
 
-      <p className="m-0 mb-2 text-sm font-medium">Bilan</p>
+      <p
+          className="m-0 mb-2 text-xs"
+          style={{ color: MUTED, letterSpacing: "0.12em", textTransform: "uppercase" }}
+        >
+          Bilan
+        </p>
       <div className="flex gap-2 mb-5">
         {STATES.map(([id, label]) => (
           <button
@@ -472,8 +502,8 @@ export function SessionView({
             style={{
               height: 44,
               border: `1px solid ${session.state === id ? INK : LINE}`,
-              background: session.state === id ? INK : "#fff",
-              color: session.state === id ? "#fff" : MUTED,
+              background: session.state === id ? ACCENT : CARD,
+              color: session.state === id ? ON_ACCENT : MUTED,
               fontSize: 14,
             }}
           >
@@ -483,7 +513,12 @@ export function SessionView({
       </div>
 
       <div className="pt-4" style={{ borderTop: `1px solid ${LINE}` }}>
-        <p className="m-0 mb-2 text-sm font-medium">Organiser</p>
+        <p
+          className="m-0 mb-2 text-xs"
+          style={{ color: MUTED, letterSpacing: "0.12em", textTransform: "uppercase" }}
+        >
+          Organiser
+        </p>
         <p className="m-0 mb-2 text-xs" style={{ color: MUTED }}>
           Jour
         </p>
@@ -499,10 +534,10 @@ export function SessionView({
                 style={{
                   height: 40,
                   border: `1px solid ${on ? INK : LINE}`,
-                  background: on ? INK : "#fff",
-                  color: on ? "#fff" : INK,
+                  background: on ? ACCENT : CARD,
+                  color: on ? ON_ACCENT : INK,
                   fontSize: 13,
-                }}
+                 borderRadius: R.pill,}}
               >
                 {d.slice(0, 3)}
               </button>

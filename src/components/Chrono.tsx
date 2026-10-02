@@ -6,7 +6,7 @@ import { useNow } from "../hooks/useNow";
 import { useWakeLock } from "../hooks/useWakeLock";
 import { chime, tick, unlockAudio } from "../lib/beep";
 import { humanDuration } from "../lib/date";
-import { INK, LINE, MUTED } from "../theme";
+import { ACCENT, CARD, INK, LINE, MUTED, ON_ACCENT, ON_FILL, R } from "../theme";
 import type { ChronoState } from "./chronoState";
 
 interface Props {
@@ -116,7 +116,7 @@ export function Chrono({ items, disc, color, state, onState, onBack, onFinish }:
           <button
             onClick={start}
             className="w-full cursor-pointer border-none"
-            style={{ height: 56, background: color, color: "#fff", fontSize: 17 }}
+            style={{ height: 56, background: color, color: ON_FILL, fontSize: 17 }}
           >
             Démarrer le chrono
           </button>
@@ -161,14 +161,14 @@ export function Chrono({ items, disc, color, state, onState, onBack, onFinish }:
             <button
               onClick={pausedAt === null ? pause : resume}
               className="flex-1 cursor-pointer"
-              style={{ height: 52, border: `1px solid ${INK}`, background: "#fff", color: INK, fontSize: 16 }}
+              style={{ height: 52, border: `1px solid ${INK}`, background: CARD, color: INK, fontSize: 16 , borderRadius: R.field}}
             >
               {pausedAt === null ? "Pause" : "Reprendre"}
             </button>
             <button
               onClick={skip}
               className="flex-1 cursor-pointer border-none"
-              style={{ height: 52, background: INK, color: "#fff", fontSize: 16 }}
+              style={{ height: 52, background: ACCENT, color: ON_ACCENT, fontSize: 16 , borderRadius: R.pill}}
             >
               Passer →
             </button>
@@ -187,7 +187,7 @@ export function Chrono({ items, disc, color, state, onState, onBack, onFinish }:
           <button
             onClick={onFinish}
             className="w-full cursor-pointer border-none"
-            style={{ height: 56, background: color, color: "#fff", fontSize: 17 }}
+            style={{ height: 56, background: color, color: ON_FILL, fontSize: 17 }}
           >
             Noter la séance comme faite
           </button>

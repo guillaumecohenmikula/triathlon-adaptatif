@@ -20,15 +20,23 @@ export class Boundary extends Component<{ children: ReactNode }, State> {
   render() {
     if (this.state.message === null) return this.props.children;
     return (
-      <div className="p-4" style={{ fontFamily: "ui-sans-serif, system-ui, sans-serif" }}>
+      <div
+        className="p-4"
+        style={{
+          fontFamily: "ui-sans-serif, system-ui, sans-serif",
+          background: "#0E1A24",
+          color: "#F2F5F7",
+          minHeight: "100%",
+        }}
+      >
         <p className="m-0 mb-2 text-base font-medium">L'app s'est arrêtée</p>
-        <p className="m-0 mb-4 text-sm" style={{ color: "#7A6A55" }}>
+        <p className="m-0 mb-4 text-sm" style={{ color: "#9AAAB6" }}>
           {this.state.message}
         </p>
         <button
           onClick={() => window.location.reload()}
           className="w-full cursor-pointer border-none"
-          style={{ height: 44, background: "#12202B", color: "#fff", fontSize: 14 }}
+          style={{ height: 44, borderRadius: 999, background: "#D2703F", color: "#1A1008", fontSize: 14 }}
         >
           Recharger
         </button>

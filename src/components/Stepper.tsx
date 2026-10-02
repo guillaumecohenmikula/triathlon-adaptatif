@@ -1,4 +1,4 @@
-import { INK, LINE } from "../theme";
+import { CARD, INK, LINE } from "../theme";
 
 interface Props {
   value: number;
@@ -16,7 +16,7 @@ export function Stepper({ value, onChange, min, max, step, format, label }: Prop
     width: 52,
     height: 48,
     border: `1px solid ${LINE}`,
-    background: "#fff",
+    background: CARD,
     color: enabled ? INK : LINE,
     fontSize: 22,
     cursor: enabled ? "pointer" : "default",

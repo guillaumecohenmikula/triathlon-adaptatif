@@ -1,6 +1,6 @@
 import type { Item, ItemKind, Movement } from "../data/types";
 import { clock } from "../engine/rest";
-import { INK, LINE, MUTED } from "../theme";
+import { ACCENT, CARD, INK, LINE, MUTED, ON_ACCENT, R } from "../theme";
 
 interface Props {
   item: Item;
@@ -20,7 +20,7 @@ const KINDS: [ItemKind, string][] = [
 
 const field = {
   border: `1px solid ${LINE}`,
-  background: "#fff",
+  background: CARD,
   color: INK,
   fontSize: 16,
   padding: 8,
@@ -45,7 +45,7 @@ export function ItemEditor({ item, movements, onChange, onRemove, onMove, first,
   };
 
   return (
-    <div className="p-3 mb-2" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+    <div className="p-3 mb-2" style={{ background: CARD, border: `1px solid ${LINE}` , borderRadius: R.card}}>
       <div className="flex gap-2 mb-2">
         <select
           value={item.movement ?? ""}
@@ -70,7 +70,7 @@ export function ItemEditor({ item, movements, onChange, onRemove, onMove, first,
           onClick={() => onMove(-1)}
           disabled={first}
           aria-label="Monter"
-          style={{ width: 40, height: 40, border: `1px solid ${LINE}`, background: "#fff", color: first ? LINE : INK }}
+          style={{ width: 40, height: 40, border: `1px solid ${LINE}`, background: CARD, color: first ? LINE : INK , borderRadius: R.field}}
         >
           ↑
         </button>
@@ -78,7 +78,7 @@ export function ItemEditor({ item, movements, onChange, onRemove, onMove, first,
           onClick={() => onMove(1)}
           disabled={last}
           aria-label="Descendre"
-          style={{ width: 40, height: 40, border: `1px solid ${LINE}`, background: "#fff", color: last ? LINE : INK }}
+          style={{ width: 40, height: 40, border: `1px solid ${LINE}`, background: CARD, color: last ? LINE : INK , borderRadius: R.field}}
         >
           ↓
         </button>
@@ -102,9 +102,9 @@ export function ItemEditor({ item, movements, onChange, onRemove, onMove, first,
               style={{
                 height: 36,
                 border: `1px solid ${on ? INK : LINE}`,
-                background: on ? INK : "#fff",
-                color: on ? "#fff" : MUTED,
-              }}
+                background: on ? ACCENT : CARD,
+                color: on ? ON_ACCENT : MUTED,
+               borderRadius: R.pill,}}
             >
               {text}
             </button>
