@@ -6,6 +6,7 @@ import { SESSION_GUIDES } from "./data/sessionGuides";
 import type { Session, Template } from "./data/types";
 import { signals } from "./engine/advice";
 import { blankSession, fromTemplate, newId } from "./engine/session";
+import { useBackGuard } from "./hooks/useBackGuard";
 import { cssPace, isValidTest } from "./lib/swim";
 import { daysUntil, mondayKey, shiftWeek, weekOf, weeksBetween } from "./lib/date";
 import { Choose } from "./screens/Choose";
@@ -85,6 +86,11 @@ export default function App() {
   };
 
   const back = () => setView(null);
+
+  // Le bouton Retour du téléphone referme ce qui est ouvert, au lieu de quitter l'app :
+  // d'abord l'écran posé par-dessus la semaine, puis l'onglet courant.
+  useBackGuard(view !== null, back);
+  useBackGuard(view === null && tab !== "semaine", () => setTab("semaine"));
 
   /** Pose une séance sur un jour et l'ouvre : on enchaîne presque toujours sur son contenu. */
   const place = (session: Session) => {

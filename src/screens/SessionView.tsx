@@ -10,6 +10,7 @@ import type { SessionGuide } from "../data/sessionGuides";
 import { DAYS, STATES } from "../data/settings";
 import type { Actual, ActivityId, DoneItem, Item, Movement, Session, SessionState, Template } from "../data/types";
 import { previousDone } from "../engine/kpi";
+import { useBackGuard } from "../hooks/useBackGuard";
 import { addItem, emptyItem, moveItem, newId, plannedMinutes, removeItem, updateItem } from "../engine/session";
 import { timeable } from "../engine/timeline";
 import { parseActivity, summary } from "../lib/activityFile";
@@ -74,6 +75,9 @@ export function SessionView({
   const done = session.done ?? {};
   const previous = useMemo(() => previousDone(sessions, session), [sessions, session]);
   const planned = plannedMinutes(session.items);
+  // Dans une séance, le retour sort du pas-à-pas ou du chrono avant de refermer la séance.
+  useBackGuard(mode !== "apercu", () => setMode("apercu"));
+
   const withChrono = timeable(session.items, session.disc);
 
   const num = (v: string) => {
