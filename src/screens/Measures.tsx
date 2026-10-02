@@ -252,8 +252,9 @@ export function Measures({ sessions, signals, currentWeek, weights, onRecordWeig
                   <div key={m.movement} className="flex justify-between text-xs mb-1">
                     <span>{m.label}</span>
                     <span style={{ color: MUTED }}>
-                      {m.best ? `record estimé ${m.best} kg · ` : ""}
-                      {Math.round(m.volume).toLocaleString("fr-FR")} kg soulevés
+                      {m.bestHold
+                        ? `meilleur maintien ${m.bestHold} s · ${m.sessions} séance${m.sessions > 1 ? "s" : ""}`
+                        : `${m.best ? `record estimé ${m.best} kg · ` : ""}${Math.round(m.volume).toLocaleString("fr-FR")} kg soulevés`}
                     </span>
                   </div>
                 ))}

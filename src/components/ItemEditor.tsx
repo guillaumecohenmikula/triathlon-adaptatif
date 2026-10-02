@@ -14,6 +14,7 @@ interface Props {
 
 const KINDS: [ItemKind, string][] = [
   ["reps", "Exercice"],
+  ["hold", "Gainage"],
   ["time", "Durée"],
   ["distance", "Distance"],
 ];
@@ -112,6 +113,43 @@ export function ItemEditor({ item, movements, onChange, onRemove, onMove, first,
         })}
       </div>
 
+      {item.kind === "hold" && (
+        <div className="flex gap-2 mb-2">
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {label("Séries")}
+            <input
+              value={item.sets ?? ""}
+              onChange={(e) => onChange({ sets: num(e.target.value) })}
+              inputMode="numeric"
+              style={small}
+            />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {label("Secondes tenues")}
+            <input
+              value={item.seconds ?? ""}
+              onChange={(e) => onChange({ seconds: num(e.target.value) })}
+              inputMode="numeric"
+              placeholder="40"
+              style={small}
+            />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {label("Repos")}
+            <input
+              value={item.rest ? clock(item.rest) : ""}
+              onChange={(e) => {
+                const [m, s] = e.target.value.split(":");
+                const secs = Number(m) * 60 + Number(s ?? 0);
+                onChange({ rest: Number.isFinite(secs) && secs > 0 ? secs : undefined });
+              }}
+              placeholder="1:00"
+              style={small}
+            />
+          </div>
+        </div>
+      )}
+
       {item.kind === "reps" && (
         <div className="flex gap-2 mb-2">
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -148,7 +186,7 @@ export function ItemEditor({ item, movements, onChange, onRemove, onMove, first,
         </div>
       )}
 
-      {item.kind === "reps" && (
+      {(item.kind === "reps" || item.kind === "hold") && (
         <div className="mb-2">
           {label("Charge")}
           <input

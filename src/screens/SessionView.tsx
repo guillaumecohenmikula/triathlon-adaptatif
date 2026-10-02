@@ -328,7 +328,7 @@ export function SessionView({
       )}
       {session.items.map((item, i) => {
         const record = done[item.id];
-        const sets = (record?.sets ?? []).filter((s) => s.reps || s.load);
+        const sets = (record?.sets ?? []).filter((s) => s.reps || s.load || s.seconds);
         return (
           <button
             key={item.id}
@@ -344,16 +344,24 @@ export function SessionView({
               <p className="m-0 text-xs whitespace-nowrap" style={{ color: MUTED }}>
                 {item.kind === "reps"
                   ? `${item.sets ?? "?"} × ${item.reps ?? "?"}`
-                  : item.kind === "distance"
-                    ? `${item.distance} m`
-                    : item.rep
-                      ? `${item.rep.n} × ${item.rep.work} min`
-                      : `${item.minutes ?? 0} min`}
+                  : item.kind === "hold"
+                    ? `${item.sets ?? "?"} × ${item.seconds ?? "?"} s`
+                    : item.kind === "distance"
+                      ? `${item.distance} m`
+                      : item.rep
+                        ? `${item.rep.n} × ${item.rep.work} min`
+                        : `${item.minutes ?? 0} min`}
               </p>
             </div>
             {sets.length > 0 && (
               <p className="m-0 mt-1 text-xs" style={{ color }}>
-                {sets.map((s) => `${s.reps ?? "?"} × ${s.load ?? "?"} kg`).join(" · ")}
+                {sets
+                  .map((s) =>
+                    s.seconds !== undefined
+                      ? `${s.seconds} s`
+                      : `${s.reps ?? "?"} × ${s.load ?? "?"} kg`,
+                  )
+                  .join(" · ")}
               </p>
             )}
             {item.note && (

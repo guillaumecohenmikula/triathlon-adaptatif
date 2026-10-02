@@ -102,6 +102,8 @@ export interface MovementStat {
   lastWeek: string;
   /** Meilleur record de force estimé, en kilos. */
   best?: number;
+  /** Plus long maintien tenu, en secondes, pour un gainage. */
+  bestHold?: number;
   /** Charge totale soulevée sur le mouvement, tous temps confondus. */
   volume: number;
   sessions: number;
@@ -126,6 +128,9 @@ export function movements(sessions: Session[]): MovementStat[] {
       sets.forEach((set) => {
         const rm = set.reps && set.load ? estimated1RM(set.reps, set.load) : undefined;
         if (rm && (stat.best === undefined || rm > stat.best)) stat.best = rm;
+        if (set.seconds && (stat.bestHold === undefined || set.seconds > stat.bestHold)) {
+          stat.bestHold = set.seconds;
+        }
       });
       out.set(key, stat);
     });

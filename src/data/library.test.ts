@@ -52,6 +52,21 @@ describe("bibliothèque fournie", () => {
     expect(t.items[3].reps).toBe("8 par jambe");
   });
 
+  it("mesure le gainage en secondes tenues, pas en répétitions", () => {
+    const haut = TEMPLATES.find((x) => x.id === "t-haut")!;
+    const planche = haut.items.find((i) => i.label === "Planche")!;
+    expect(planche).toMatchObject({ kind: "hold", sets: 3, seconds: 40 });
+    expect(planche.reps).toBeUndefined();
+
+    const bas = TEMPLATES.find((x) => x.id === "t-bas")!;
+    expect(bas.items.find((i) => i.label === "Planche latérale")!.kind).toBe("hold");
+  });
+
+  it("marque les mouvements qui se tiennent plutôt qu'ils ne se répètent", () => {
+    expect(MOVEMENTS.find((m) => m.name === "Planche")!.kind).toBe("hold");
+    expect(MOVEMENTS.find((m) => m.name === "Squat")!.kind).toBe("reps");
+  });
+
   it("tient dans les 45 à 50 minutes annoncées", () => {
     ["t-haut", "t-bas"].forEach((id) => {
       const minutes = plannedMinutes(TEMPLATES.find((t) => t.id === id)!.items);
@@ -63,7 +78,7 @@ describe("bibliothèque fournie", () => {
   it("rattache chaque exercice de renfo à un mouvement de la bibliothèque", () => {
     TEMPLATES.filter((t) => t.disc === "renfo").forEach((t) =>
       t.items
-        .filter((i) => i.kind === "reps")
+        .filter((i) => i.kind === "reps" || i.kind === "hold")
         .forEach((i) => {
           const movement = MOVEMENTS.find((m) => m.id === i.movement);
           expect(movement, i.label).toBeDefined();

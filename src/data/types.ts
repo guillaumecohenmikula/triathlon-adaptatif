@@ -175,8 +175,11 @@ export type Journal = Record<string, JournalEntry>;
  * désormais de source à la bibliothèque fournie et aux fiches d'exécution.
  * ------------------------------------------------------------------------- */
 
-/** Comment un élément de séance se mesure. */
-export type ItemKind = "reps" | "time" | "distance";
+/**
+ * Comment un élément de séance se mesure : en répétitions, en temps tenu (gainage),
+ * en durée, ou en distance.
+ */
+export type ItemKind = "reps" | "hold" | "time" | "distance";
 
 /** Un mouvement de la bibliothèque : un exercice de renfo, un éducatif. */
 export interface Movement {
@@ -199,8 +202,10 @@ export interface Item {
   kind: ItemKind;
   /** Nombre de séries, pour un exercice. */
   sets?: number;
-  /** Ce qu'on fait par série : « 8 », « 8-12 », « max », « 45 s ». */
+  /** Ce qu'on fait par série : « 8 », « 8-12 », « max ». */
   reps?: string;
+  /** Secondes à tenir par série, pour un gainage. */
+  seconds?: number;
   /** Charge : « 60 kg », « élastique », « poids du corps ». */
   load?: string;
   minutes?: number;
@@ -229,8 +234,8 @@ export interface Template {
 
 /** Ce qui a réellement été fait sur un élément. */
 export interface DoneItem {
-  /** Une entrée par série réalisée. */
-  sets?: { reps?: number; load?: number }[];
+  /** Une entrée par série réalisée : répétitions et charge, ou secondes tenues. */
+  sets?: { reps?: number; load?: number; seconds?: number }[];
   minutes?: number;
   distance?: number;
 }

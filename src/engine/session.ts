@@ -14,7 +14,8 @@ export const emptyItem = (kind: Item["kind"] = "reps"): Item => ({
   id: newId(),
   label: "",
   kind,
-  ...(kind === "reps" ? { sets: 3, reps: "10" } : {}),
+  ...(kind === "reps" ? { sets: 3, reps: "10", rest: 90 } : {}),
+  ...(kind === "hold" ? { sets: 3, seconds: 40, rest: 60 } : {}),
   ...(kind === "time" ? { minutes: 20 } : {}),
   ...(kind === "distance" ? { distance: 1000 } : {}),
 });
@@ -63,13 +64,15 @@ const WORK_PER_SET = 45;
  * n'annonce jamais sa durée, or une séance de renfo sans durée paraîtrait vide.
  */
 export const repsMinutes = (item: Item) =>
-  Math.round(((item.sets ?? 3) * (WORK_PER_SET + (item.rest ?? 90))) / 60);
+  Math.round(
+    ((item.sets ?? 3) * ((item.kind === "hold" ? (item.seconds ?? 40) : WORK_PER_SET) + (item.rest ?? 90))) / 60,
+  );
 
 /** Durée d'un élément : celle qu'il annonce, ou celle qu'on en déduit. */
 export function itemMinutes(item: Item): number {
   if (item.rep) return item.rep.n * item.rep.work + (item.rep.n - 1) * item.rep.rest;
   if (item.minutes) return item.minutes;
-  return item.kind === "reps" ? repsMinutes(item) : 0;
+  return item.kind === "reps" || item.kind === "hold" ? repsMinutes(item) : 0;
 }
 
 /** Durée prévue par les éléments, récupérations d'intervalles comprises. */

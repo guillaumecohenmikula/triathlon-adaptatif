@@ -37,8 +37,10 @@ const number = (v: string) => {
   return v.trim() === "" || !Number.isFinite(n) ? undefined : n;
 };
 
+type SetEntry = NonNullable<DoneItem["sets"]>[number];
+
 /** Écrit une série dans le relevé, en comblant les séries sautées. */
-function withSet(done: DoneItem | undefined, i: number, value: { reps?: number; load?: number } | null) {
+function withSet(done: DoneItem | undefined, i: number, value: SetEntry | null) {
   const sets = [...(done?.sets ?? [])];
   while (sets.length <= i) sets.push({});
   sets[i] = value ?? {};
@@ -90,12 +92,16 @@ export function SessionStep({
   if (!cur) return null;
 
   const sets = cur.sets ?? 3;
+  // Un gainage se relève en secondes tenues, un exercice en répétitions et en charge.
+  const hold = cur.kind === "hold";
+  const logged = hold || cur.kind === "reps";
+  const columns: ("reps" | "load" | "seconds")[] = hold ? ["seconds"] : ["reps", "load"];
   const record = done[cur.id];
   const last = previous[cur.movement ?? cur.label];
   const guides = cur.kind === "reps" ? guidesFor(cur.label) : [];
   const restFor = cur.rest ?? DEFAULT_REST;
 
-  const value = (i: number, field: "reps" | "load") => {
+  const value = (i: number, field: "reps" | "load" | "seconds") => {
     const key = `${cur.id}-${i}-${field}`;
     if (edits[key] !== undefined) return edits[key];
     const recorded = record?.sets?.[i]?.[field];
@@ -110,6 +116,7 @@ export function SessionStep({
       const plain = /^\d+$/.test(cur.reps ?? "") ? (cur.reps as string) : "";
       if (plain) return plain;
     }
+    if (field === "seconds" && cur.seconds !== undefined) return String(cur.seconds);
     if (earlier !== undefined) return String(earlier);
     const sets = last?.sets ?? [];
     const before = sets[i]?.[field] ?? sets[sets.length - 1]?.[field];
@@ -124,7 +131,16 @@ export function SessionStep({
       setRest(null);
       return;
     }
-    onDone(cur.id, withSet(record, i, { reps: number(value(i, "reps")), load: number(value(i, "load")) }));
+    onDone(
+      cur.id,
+      withSet(
+        record,
+        i,
+        hold
+          ? { seconds: number(value(i, "seconds")) }
+          : { reps: number(value(i, "reps")), load: number(value(i, "load")) },
+      ),
+    );
     fired.current = false;
     lastTick.current = null;
     setRest(i + 1 < sets ? { endsAt: Date.now() + restFor * 1000, next: i + 2 } : null);
@@ -170,10 +186,10 @@ export function SessionStep({
         {cur.label}
       </p>
 
-      {cur.kind === "reps" && (
+      {logged && (
         <>
           <p className="m-0 mb-1" style={{ fontSize: 20, color }}>
-            {sets} × {cur.reps ?? "?"}
+            {sets} × {hold ? `${cur.seconds ?? "?"} s` : (cur.reps ?? "?")}
           </p>
           {cur.load && (
             <p className="m-0 mb-1" style={{ fontSize: 15 }}>
@@ -185,8 +201,10 @@ export function SessionStep({
             <p className="m-0 mb-1" style={{ fontSize: 15 }}>
               <span style={{ color: MUTED }}>La dernière fois · </span>
               {(last.sets ?? [])
-                .filter((s) => s.reps || s.load)
-                .map((s) => `${s.reps ?? "?"} × ${s.load ?? "?"} kg`)
+                .filter((s) => s.reps || s.load || s.seconds)
+                .map((s) =>
+                  s.seconds !== undefined ? `${s.seconds} s` : `${s.reps ?? "?"} × ${s.load ?? "?"} kg`,
+                )
                 .join(", ")}
             </p>
           )}
@@ -198,8 +216,11 @@ export function SessionStep({
           <div className="mb-3">
             <div className="flex gap-2 mb-1 text-xs" style={{ color: MUTED }}>
               <span style={{ width: 54 }}>Série</span>
-              <span style={{ flex: 1, textAlign: "center" }}>Répétitions</span>
-              <span style={{ flex: 1, textAlign: "center" }}>Charge (kg)</span>
+              {columns.map((field) => (
+                <span key={field} style={{ flex: 1, textAlign: "center" }}>
+                  {field === "seconds" ? "Secondes tenues" : field === "reps" ? "Répétitions" : "Charge (kg)"}
+                </span>
+              ))}
               <span style={{ width: 52 }} />
             </div>
             {Array.from({ length: sets }).map((_, i) => {
@@ -207,18 +228,18 @@ export function SessionStep({
               return (
                 <div key={i} className="flex gap-2 mb-1 items-center">
                   <span style={{ width: 54, color: MUTED }}>{i + 1}</span>
-                  <input
-                    value={value(i, "reps")}
-                    onChange={(e) => setEdits((s) => ({ ...s, [`${cur.id}-${i}-reps`]: e.target.value }))}
-                    inputMode="numeric"
-                    style={{ ...input, flex: 1 }}
-                  />
-                  <input
-                    value={value(i, "load")}
-                    onChange={(e) => setEdits((s) => ({ ...s, [`${cur.id}-${i}-load`]: e.target.value }))}
-                    inputMode="decimal"
-                    style={{ ...input, flex: 1 }}
-                  />
+                  {columns.map((field) => (
+                    <input
+                      key={field}
+                      value={value(i, field)}
+                      onChange={(e) =>
+                        setEdits((s) => ({ ...s, [`${cur.id}-${i}-${field}`]: e.target.value }))
+                      }
+                      inputMode={field === "load" ? "decimal" : "numeric"}
+                      aria-label={`Série ${i + 1}, ${field === "seconds" ? "secondes" : field === "reps" ? "répétitions" : "charge"}`}
+                      style={{ ...input, flex: 1 }}
+                    />
+                  ))}
                   <button
                     onClick={() => toggle(i)}
                     aria-label={`Série ${i + 1} faite`}

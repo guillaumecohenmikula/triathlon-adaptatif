@@ -35,6 +35,20 @@ describe("durée d'une séance", () => {
   });
 });
 
+describe("gainage", () => {
+  const plank: Item = { id: "p", label: "Planche", kind: "hold", sets: 3, seconds: 40, rest: 60 };
+
+  it("compte le temps tenu et le repos dans la durée", () => {
+    expect(itemMinutes(plank)).toBe(5);
+  });
+
+  it("démarre un nouvel élément avec des secondes plutôt que des répétitions", () => {
+    const item = emptyItem("hold");
+    expect(item.seconds).toBe(40);
+    expect(item.reps).toBeUndefined();
+  });
+});
+
 describe("modifier une liste d'éléments", () => {
   const items = [exo, block, swim];
 

@@ -38,6 +38,17 @@ const EXTRA_MOVEMENTS = [
   "Curl haltères",
 ];
 
+/**
+ * Les exercices qui se tiennent plutôt qu'ils ne se répètent : leur prescription de base
+ * est un temps (« 3 × 45 s ») et non un nombre de répétitions.
+ */
+const HOLDS = new Set(
+  Object.values(EXOS)
+    .flatMap((list) => list ?? [])
+    .filter((e) => /\d+\s*s\b/.test(e.p.base.s))
+    .map((e) => e.n),
+);
+
 /** Les exercices de renfo de la bibliothèque, sans doublon de nom. */
 export const MOVEMENTS: Movement[] = [
   ...new Map(
@@ -51,7 +62,8 @@ export const MOVEMENTS: Movement[] = [
           id: slug(name),
           name,
           disc: "renfo",
-          kind: "reps",
+          // Un gainage se compte en secondes tenues, pas en répétitions.
+          kind: HOLDS.has(name) ? "hold" : "reps",
           guide: GUIDES_FOR[name]?.[0],
           builtIn: true,
         } satisfies Movement,
@@ -146,15 +158,17 @@ const STRENGTH: Template[] = [
         "Haltères",
         "Debout, coudes au corps. Monte les haltères vers les épaules, redescends lentement.",
       ),
-      exo(
-        "haut-6",
-        "Planche",
-        3,
-        "30-45 s",
-        60,
-        "Poids du corps",
-        "Avant-bras au sol, coudes sous les épaules, corps bien droit. Tiens sans bouger.",
-      ),
+      {
+        id: "haut-6",
+        movement: slug("Planche"),
+        label: "Planche",
+        kind: "hold",
+        sets: 3,
+        seconds: 40,
+        rest: 60,
+        load: "Poids du corps",
+        note: "Avant-bras au sol, coudes sous les épaules, corps bien droit. Tiens sans bouger.",
+      },
     ],
   },
   {
@@ -197,15 +211,17 @@ const STRENGTH: Template[] = [
         "Pied arrière sur un banc, haltères si besoin",
         "Descends jusqu'à ce que le genou arrière frôle le sol, puis remonte. Fais les 8 répétitions d'une jambe avant de changer.",
       ),
-      exo(
-        "bas-4",
-        "Planche latérale",
-        3,
-        "30-40 s par côté",
-        60,
-        "Poids du corps",
-        "Sur le côté, avant-bras au sol, bassin soulevé, corps aligné. Tiens, puis change de côté.",
-      ),
+      {
+        id: "bas-4",
+        movement: slug("Planche latérale"),
+        label: "Planche latérale",
+        kind: "hold",
+        sets: 3,
+        seconds: 35,
+        rest: 60,
+        load: "Poids du corps",
+        note: "Sur le côté, avant-bras au sol, bassin soulevé, corps aligné. Le temps vaut par côté : tiens, puis change.",
+      },
       exo(
         "bas-5",
         "Pont fessier",

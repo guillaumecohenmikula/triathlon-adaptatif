@@ -107,6 +107,19 @@ describe("progression en renfo", () => {
     expect(m.best).toBe(estimated1RM(6, 70));
   });
 
+  it("retient le plus long maintien d'un gainage, sans parler de charge", () => {
+    const [m] = movements([
+      session({
+        disc: "renfo",
+        items: [{ id: "g1", movement: "planche", label: "Planche", kind: "hold", sets: 3, seconds: 40 }],
+        done: { g1: { sets: [{ seconds: 40 }, { seconds: 48 }, { seconds: 35 }] } },
+      }),
+    ]);
+    expect(m.bestHold).toBe(48);
+    expect(m.best).toBeUndefined();
+    expect(m.volume).toBe(0);
+  });
+
   it("ignore les exercices sur lesquels rien n'a été noté", () => {
     expect(movements([session({ disc: "renfo", items: [{ id: "i1", label: "Squat", kind: "reps" }] })])).toEqual([]);
   });
